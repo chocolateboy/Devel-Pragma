@@ -13,10 +13,10 @@ use File::Spec;
 
 # make sure use VERSION still works OK
 use 5;         
-use 5.008;
-use 5.008_000;
-use 5.8.0;
-use v5.8.0;
+use 5.006;
+use 5.006_000;
+use 5.6.0;
+use v5.6.0;
 
 my $already_fixed;
 

@@ -60,7 +60,7 @@ static OP * devel_hints_lexical_ck_require(pTHX_ OP * o) {
 }
 
 static OP * devel_hints_lexical_require(pTHX) {
-    dVAR; dSP;
+    dSP;
     SV * sv;
     HV * hh, * new_hh;
     OP * o;

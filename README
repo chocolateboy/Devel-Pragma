@@ -1,4 +1,4 @@
-Devel::Hints::Lexical version 0.01
+Devel::Hints::Lexical version 0.02
 ================================
 
 Devel::Hints::Lexical exports a function that makes %^H lexically-scoped.
