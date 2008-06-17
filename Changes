@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Hints::Lexical.
 
+0.05  Tue Jun 17 23:40:36 2008
+    - lexicalize_hh is now an alias for my_hh
+
 0.04  Tue Jun 17 23:07:09 2008
     - added dependency on if.pm for perl 5.6.0 and 5.6.1
 

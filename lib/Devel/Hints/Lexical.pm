@@ -5,18 +5,18 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use XSLoader;
 use Scope::Guard;
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(lexicalize_hh);
+our @EXPORT_OK = qw(lexicalize_hh my_hh);
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
-sub lexicalize_hh() {
+sub my_hh() {
     my $package = __PACKAGE__;
 
     return if ((($^H & 0x120000) == 0x120000) && ($^H{$package}));
@@ -33,6 +33,8 @@ sub lexicalize_hh() {
     _enter();
 }
 
+BEGIN { *lexicalize_hh = \&my_hh }
+
 1;
 
 __END__
@@ -45,10 +47,10 @@ Devel::Hints::Lexical - make %^H lexically-scoped
 
   package MyPragma;
 
-  use Devel::Hints::Lexical qw(lexicalize_hh);
+  use Devel::Hints::Lexical qw(my_hh);
 
   sub import {
-      lexicalize_hh;
+      my_hh;
       $^H{MyPragma} = 1;
   }
 
@@ -61,25 +63,28 @@ not. This module fixes that by making %^H lexically scoped i.e. it prevents %^H 
 
 =head1 FUNCTIONS
 
-=head2 lexicalize_hh
+=head2 my_hh
 
-Devel::Hints::Lexical exports one function, C<lexicalize_hh>. This function enables bespoke versions of perl's
-C<require> and C<do EXPR> functions in the current scope which clear %^H before it executes and restore the
-previous %^H afterwards. Thus it can be thought of a lexically-scoped backport of change #33311.
+Devel::Hints::Lexical exports one function, which can be called or imported as either C<my_hh> or C<lexicalize_hh>.
+This function enables bespoke versions of perl's C<require> and C<do EXPR> functions in the current scope which
+clear %^H before it executes and restore the previous %^H afterwards. Thus it can be thought of a
+lexically-scoped backport of change #33311.
 
-Note that C<lexicalize_hh> also sets the $^H bit that "localizes" (or in this case "lexicalizes") %^H.
+Note that C<my_hh> also sets the $^H bit that "localizes" (or in this case "lexicalizes") %^H.
 
 =head1 VERSION
 
-0.04
+0.05
 
 =head1 SEE ALSO
 
 =over
 
-=item * L<Devel::Hints|Devel::Hints>
-
 =item * L<perlpragma|perlpragma>
+
+=item * L<perlvar|perlvar>
+
+=item * L<Devel::Hints|Devel::Hints>
 
 =item * http://tinyurl.com/45pwzo
 

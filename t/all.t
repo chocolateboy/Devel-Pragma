@@ -8,7 +8,7 @@ no warnings 'portable'; # suppress "v-string in use/require non-portable" warnin
 use if (-d 't'), lib => 't'; 
 
 use Test::More tests => 13;
-use Devel::Hints::Lexical qw(lexicalize_hh);
+use Devel::Hints::Lexical qw(my_hh);
 use File::Spec;
 
 # make sure use VERSION still works OK
@@ -36,7 +36,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        lexicalize_hh();
+        my_hh();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -50,7 +50,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        lexicalize_hh();
+        my_hh();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -62,7 +62,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        lexicalize_hh();
+        my_hh();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -74,7 +74,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        lexicalize_hh();
+        my_hh();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -85,7 +85,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        lexicalize_hh();
+        my_hh();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -100,7 +100,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        lexicalize_hh();
+        my_hh();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -115,7 +115,7 @@ my $already_fixed;
 
 eval {
     BEGIN {
-        lexicalize_hh();
+        my_hh();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -129,7 +129,7 @@ ok(not($@), 'eval BLOCK OK');
 eval q|
     {
         BEGIN {
-            lexicalize_hh();
+            my_hh();
             $^H{'Devel::Hints::Lexical::Test'} = 1;
         }
 
@@ -144,7 +144,7 @@ ok(not($@), 'eval EXPR OK');
 {
     {
         BEGIN {
-            lexicalize_hh();
+            my_hh();
             $^H{'Devel::Hints::Lexical::Test'} = 1;
         }
 
