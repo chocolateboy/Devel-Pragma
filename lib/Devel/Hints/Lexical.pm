@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use XSLoader;
 use Scope::Guard;
@@ -68,6 +68,10 @@ C<require> and C<do EXPR> functions in the current scope which clear %^H before 
 previous %^H afterwards. Thus it can be thought of a lexically-scoped backport of change #33311.
 
 Note that C<lexicalize_hh> also sets the $^H bit that "localizes" (or in this case "lexicalizes") %^H.
+
+=head1 VERSION
+
+0.03
 
 =head1 SEE ALSO
 

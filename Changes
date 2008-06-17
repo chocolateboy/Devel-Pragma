@@ -1,6 +1,9 @@
 Revision history for Perl extension Devel::Hints::Lexical.
 
-0.02 Tue Jun 17 21:12:51 2008
+0.03 Tue Jun 17 21:28:10 2008
+    - added dependency on Test::More for perl 5.6.0 and 5.6.1
+
+0.02 Tue Jun 17 21:15:55 2008
     - move minimum perl version down from 5.8.0 to 5.6.0 (only tested on 5.6.2)
 
 0.01 Tue Jun 17 20:14:34 2008

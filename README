@@ -1,4 +1,4 @@
-Devel::Hints::Lexical version 0.02
+Devel::Hints::Lexical version 0.03
 ================================
 
 Devel::Hints::Lexical exports a function that makes %^H lexically-scoped.
@@ -22,6 +22,7 @@ DEPENDENCIES
 This module requires these other modules and libraries:
 
     Scope::Guard
+    Test::More
 
 COPYRIGHT AND LICENCE
 

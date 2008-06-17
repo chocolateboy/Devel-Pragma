@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Devel-Hints-Lexical
-version:             0.02
+version:             0.03
 abstract:            make %^H lexically-scoped
 license:             perl
 author:              
@@ -9,6 +9,7 @@ generated_by:        ExtUtils::MakeMaker version 6.42
 distribution_type:   module
 requires:     
     Scope::Guard:                  0.03
+    Test::More:                    0
 meta-spec:
     url:     http://module-build.sourceforge.net/META-spec-v1.3.html
     version: 1.3

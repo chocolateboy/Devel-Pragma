@@ -16,7 +16,10 @@ if ($Config{gccversion}) {
 WriteMakefile(
     NAME          => 'Devel::Hints::Lexical',
     VERSION_FROM  => 'lib/Devel/Hints/Lexical.pm',
-    PREREQ_PM     => { 'Scope::Guard' => '0.03' },
+    PREREQ_PM     => {
+        'Scope::Guard' => '0.03',
+        'Test::More'   => '0'
+    },
     ABSTRACT_FROM => 'lib/Devel/Hints/Lexical.pm',
     AUTHOR        => 'chocolateboy <chocolate.boy@email.com>',
     LIBS          => [''],
