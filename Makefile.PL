@@ -13,6 +13,14 @@ if ($Config{gccversion}) {
     $optimize = $Config{optimize};
 }
 
+# older MakeMakers don't correctly assess whether if.pm is installed
+eval 'require "if.pm"';
+
+if ($@) {
+    warn "Warning: prerequisite if 0 not found", $/;
+    exit 0;
+}
+
 WriteMakefile(
     NAME          => 'Devel::Hints::Lexical',
     VERSION_FROM  => 'lib/Devel/Hints/Lexical.pm',

@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use XSLoader;
 use Scope::Guard;
@@ -64,14 +64,14 @@ not. This module fixes that by making %^H lexically scoped i.e. it prevents %^H 
 =head2 lexicalize_hh
 
 Devel::Hints::Lexical exports one function, C<lexicalize_hh>. This function enables bespoke versions of perl's
-C<require> and C<do EXPR> functions in the current scope which clear %^H before it executes and restores the
+C<require> and C<do EXPR> functions in the current scope which clear %^H before it executes and restore the
 previous %^H afterwards. Thus it can be thought of a lexically-scoped backport of change #33311.
 
 Note that C<lexicalize_hh> also sets the $^H bit that "localizes" (or in this case "lexicalizes") %^H.
 
 =head1 VERSION
 
-0.03
+0.04
 
 =head1 SEE ALSO
 

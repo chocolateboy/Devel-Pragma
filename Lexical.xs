@@ -24,9 +24,10 @@ static OP * devel_hints_lexical_ck_require(pTHX_ OP * o) {
     }
 
     /*
-     * check for HINT_LOCALIZE_HH (0x20000) + an unused $^H (which is properly
-     * lexically scoped) bit (0x100000) so that this module (which can't use itself)
-     * can work around the %^H bug
+     * unlike %^H, $^H is lexically scoped
+     *
+     * check for HINT_LOCALIZE_HH (0x20000) + an unused bit (0x100000) so that this module
+     * (which can't use itself) can work around the %^H bug
      */
 
     if ((PL_hints & 0x120000) != 0x120000) {
@@ -78,7 +79,7 @@ static OP * devel_hints_lexical_require(pTHX) {
 #endif
 
     /*
-     * we need to set PL_hintgv to an empty hash rather than NULL as perl 5.10 has an assertion in scope.c
+     * we need to set %^H to an empty hash rather than NULL as perl 5.10 has an assertion in scope.c
      * that expects it be non-NULL at scope's end
      */
     new_hh = newHV();
