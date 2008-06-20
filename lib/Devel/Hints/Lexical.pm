@@ -5,14 +5,14 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use XSLoader;
 use Scope::Guard;
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(lexicalize_hh my_hh my_hints glob_enter glob_leave);
+our @EXPORT_OK = qw(lexicalize_hh my_hh my_hints);
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
@@ -78,7 +78,7 @@ The return value is a reference to %^H.
 
 =head1 VERSION
 
-0.06
+0.07
 
 =head1 SEE ALSO
 

@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Hints::Lexical.
 
+0.07  Fri Jun 20 23:47:28 2008
+    - doc fixlet
+
 0.06  Fri Jun 20 20:35:45 2008
     - my_hh returns a reference to %^H
     - added another alias: my_hints

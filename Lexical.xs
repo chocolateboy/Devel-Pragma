@@ -26,7 +26,7 @@ static OP * devel_hints_lexical_ck_require(pTHX_ OP * o) {
     /*
      * unlike %^H, $^H is lexically scoped
      *
-     * check for HINT_LOCALIZE_HH (0x80020000) + an unused bit (0x80000000) so that this module
+     * check for HINT_LOCALIZE_HH (0x20000) + an unused bit (0x80000000) so that this module
      * (which can't use itself) can work around the %^H bug
      */
 
