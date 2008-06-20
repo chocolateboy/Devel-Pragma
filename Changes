@@ -1,5 +1,10 @@
 Revision history for Perl extension Devel::Hints::Lexical.
 
+0.06  Fri Jun 20 20:35:45 2008
+    - my_hh returns a reference to %^H
+    - added another alias: my_hints
+    - future-harden: use the outermost unused PL_hints bit
+
 0.05  Tue Jun 17 23:40:36 2008
     - lexicalize_hh is now an alias for my_hh
 

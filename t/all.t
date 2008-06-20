@@ -20,7 +20,7 @@ use v5.6.0;
 
 my $already_fixed;
 
-# we can't test brokenness as the tests may be
+# we can't assume brokenness as the tests may be
 # run against bleadperls with change #33311 applied
 
 {
