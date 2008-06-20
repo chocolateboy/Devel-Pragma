@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 use XSLoader;
 use Scope::Guard;
@@ -60,16 +60,16 @@ Devel::Hints::Lexical - make %^H lexically-scoped
 
 Until perl change #33311, which isn't currently available in any stable perl release, %^H is dynamically-scoped,
 rather than lexically-scoped. This means that values set in %^H are visible in modules loaded by C<use>.
-This makes pragmas leak from the scope in which they're meant to be enabled to scopes in which they're
+This makes pragmas leak from the scope in which they're meant to be enabled into scopes in which they're
 not. This module fixes that by making %^H lexically scoped i.e. it prevents %^H leaking across file boundaries.
 
 =head1 FUNCTIONS
 
 =head2 my_hints
 
-Devel::Hints::Lexical exports one function, which can be called or imported as either C<my_hints>, C<my_hh>, or
+C<Devel::Hints::Lexical> exports one function, which can be called or imported as either C<my_hints>, C<my_hh>, or
 C<lexicalize_hh>. This function installs versions of perl's C<require> and C<do EXPR> builtins in the
-currently-compiling scope that clear %^H before they execute and restore the previous %^H afterwards.
+currently-compiling scope which clear %^H before they execute and restore the previous %^H afterwards.
 Thus it can be thought of a lexically-scoped backport of change #33311.
 
 Note that C<my_hints> also sets the $^H bit that "localizes" (or in this case "lexicalizes") %^H.
@@ -78,7 +78,7 @@ The return value is a reference to %^H.
 
 =head1 VERSION
 
-0.07
+0.08
 
 =head1 SEE ALSO
 
