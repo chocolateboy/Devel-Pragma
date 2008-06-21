@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 use XSLoader;
 use Scope::Guard;
@@ -19,18 +19,18 @@ XSLoader::load(__PACKAGE__, $VERSION);
 sub my_hints() {
     my $package = __PACKAGE__;
 
-    return if ((($^H & 0x80020000) == 0x80020000) && ($^H{$package}));
+    unless ((($^H & 0x80020000) == 0x80020000) && ($^H{$package})) {
+        my $guard = Scope::Guard->new(\&_leave);
 
-    my $guard = Scope::Guard->new(\&_leave);
+        # set HINT_LOCALIZE_HH (0x20000) + an unused bit (0x80000000) so that
+        # this module (which can't use itself) can work around the %^H bug
 
-    # set HINT_LOCALIZE_HH (0x20000) + an unused bit (0x80000000) so that
-    # this module (which can't use itself) can work around the %^H bug
+        $^H |= 0x80020000;
+        $^H{$guard} = $guard;
+        $^H{$package} = 1;
 
-    $^H |= 0x80020000;
-    $^H{$guard} = $guard;
-    $^H{$package} = 1;
-
-    _enter();
+        _enter();
+    }
 
     return \%^H;
 }
@@ -78,7 +78,7 @@ The return value is a reference to %^H.
 
 =head1 VERSION
 
-0.08
+0.09
 
 =head1 SEE ALSO
 

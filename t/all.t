@@ -7,8 +7,8 @@ no warnings 'portable'; # suppress "v-string in use/require non-portable" warnin
 
 use if (-d 't'), lib => 't'; 
 
-use Test::More tests => 13;
-use Devel::Hints::Lexical qw(my_hh);
+use Test::More tests => 15;
+use Devel::Hints::Lexical qw(my_hints);
 use File::Spec;
 
 # make sure use VERSION still works OK
@@ -36,12 +36,12 @@ my $already_fixed;
 
 {
     BEGIN {
-        my_hh();
+        my_hints();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
     BEGIN {
-	require dhl_test_2;
+        require dhl_test_2;
     }
 
     my $test = dhl_test_2::test();
@@ -50,7 +50,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        my_hh();
+        my_hints();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -62,7 +62,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        my_hh();
+        my_hints();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -74,7 +74,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        my_hh();
+        my_hints();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -85,7 +85,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        my_hh();
+        my_hints();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -100,7 +100,7 @@ my $already_fixed;
 
 {
     BEGIN {
-        my_hh();
+        my_hints();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -115,7 +115,7 @@ my $already_fixed;
 
 eval {
     BEGIN {
-        my_hh();
+        my_hints();
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
@@ -129,7 +129,7 @@ ok(not($@), 'eval BLOCK OK');
 eval q|
     {
         BEGIN {
-            my_hh();
+            my_hints();
             $^H{'Devel::Hints::Lexical::Test'} = 1;
         }
 
@@ -144,7 +144,7 @@ ok(not($@), 'eval EXPR OK');
 {
     {
         BEGIN {
-            my_hh();
+            my_hints();
             $^H{'Devel::Hints::Lexical::Test'} = 1;
         }
 
@@ -162,7 +162,7 @@ ok(not($@), 'eval EXPR OK');
     }
 
     BEGIN {
-	$^H{'Devel::Hints::Lexical::Test'} = 1;
+        $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
     use dhl_test_11;
@@ -173,4 +173,13 @@ ok(not($@), 'eval EXPR OK');
         skip('patchlevel > 33311', 1) if ($already_fixed);
         ok (not($test), 'outer scope');
     }
+}
+
+{
+    BEGIN {
+        $^H{'Devel::Hints::Lexical::Test'} = 1;
+    }
+
+    ok (my_hints->{'Devel::Hints::Lexical'}, 'returns a reference to %^H');
+    ok (my_hints->{'Devel::Hints::Lexical'}, 'returns a reference to %^H when already in scope');
 }

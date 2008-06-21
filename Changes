@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Hints::Lexical.
 
+0.09  Sat Jun 21 11:06:31 2008
+    - bugfix: return reference to %^H when already in scope
+
 0.08  Sat Jun 21 00:05:44 2008
     - doc fixlet
 

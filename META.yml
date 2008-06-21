@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Devel-Hints-Lexical
-version:             0.08
+version:             0.09
 abstract:            make %^H lexically-scoped
 license:             perl
 author:              
