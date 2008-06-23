@@ -1,18 +1,19 @@
-package Devel::Hints::Lexical;
+package Devel::Pragma;
 
 use 5.006;
 
 use strict;
 use warnings;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 use XSLoader;
 use Scope::Guard;
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(my_hints new_scope);
+our @EXPORT_OK = qw(my_hints new_scope ccstash);
+our @EXPORT_TAGS = (':all' => [ @EXPORT_OK ]);
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
@@ -24,8 +25,8 @@ sub new_scope() {
     # we don't need to stack/unstack it in %^H as %^H itself takes care of that
     # note: we need to call this *after* %^H is referenced (and possibly autovivified) by my_hints
     #
-    # every time new_scope is called, we write this scope ID to $^H{"Devel::Hints::Lexical::Scope::$caller"}.
-    # if $^H{"Devel::Hints::Lexical::Scope::$caller"} == _scope() (i.e. the stored scope ID is the same as the
+    # every time new_scope is called, we write this scope ID to $^H{"Devel::Pragma::Scope::$caller"}.
+    # if $^H{"Devel::Pragma::Scope::$caller"} == _scope() (i.e. the stored scope ID is the same as the
     # current scope ID), then we're augmenting the current scope; otherwise we're in a new scope - i.e.
     # a nested or outer scope that didn't previously "use MyPragma"
 
@@ -33,10 +34,10 @@ sub new_scope() {
     # this module (which can't use itself) can work around the %^H bug
 
     $^H |= 0x80020000;
-    $^H{'Devel::Hints::Lexical'} = 1;
+    $^H{'Devel::Pragma'} = 1;
 
     my $current_scope = _scope();
-    my $key = 'Devel::Hints::Lexical::Scope::' . caller;
+    my $key = 'Devel::Pragma::Scope::' . caller;
     my $old_scope = exists($^H{$key}) ? $^H{$key} : 0;
     my $new_scope; # is this a scope in which new_scope has not previously been called?
 
@@ -68,17 +69,23 @@ __END__
 
 =head1 NAME
 
-Devel::Hints::Lexical - lexical pragma utils
+Devel::Pragma - helper functions for developers of lexical pragmas
 
 =head1 SYNOPSIS
 
   package MyPragma;
 
-  use Devel::Hints::Lexical qw(my_hints);
+  use Devel::Pragma qw(my_hints ccstash new_scope);
 
   sub import {
-      my $hints = my_hints;
+      my $hints = my_hints;   # lexically-scoped %^H
+      my $caller = ccstash(); # currently-compiling stash
+
       $hints->{MyPragma} = 1;
+
+      if (new_scope) {
+          ...
+      }
   }
 
 =head1 DESCRIPTION
@@ -88,6 +95,10 @@ perl (from 5.6.0), which have limited support for lexical pragmas, and in the mo
 support.
 
 =head1 EXPORTS
+
+Devel::Pragma exports the following functions on demand. They can all be imported at once by using the C<:all> tag. e.g.
+
+    use Devel::Pragma qw(:all);
 
 =head2 my_hints
 
@@ -109,9 +120,51 @@ The return value is a reference to %^H.
 This function returns true if the currently-compiling scope differs from the scope being compiled the last
 time C<new_scope> was called. Subsequent calls will return false while the same scope is being compiled.
 
+=head2 ccstash
+
+This returns the name of the currently compiling stash. It can be used as a replacement for the scalar form of
+C<caller> to provide the name of the package in which C<use MyPragma> is called, but unlike C<caller> it
+returns the same value regardless of the number of intervening calls before C<MyPragma::import>
+is reached.
+
+e.g. given a pragma:
+
+    package MySuperPragma;
+
+    use Devel::Hints qw(ccstash);
+
+    sub import {
+        my ($class, %options) = @_;
+        my $caller = ccstash();
+
+        no strict 'refs';
+
+        *{"$caller\::whatever"} = ... ;
+    }
+
+and a subclass:
+
+    package MySubPragma
+
+    use base qw(MySuperPragma);
+
+    sub import {
+        my ($class, %options) = @_;
+        $class->SUPER::import(...);
+    }
+
+and a script that uses the subclass:
+
+    #!/usr/bin/env perl
+
+    use MySubPragma;
+
+- the C<ccstash> call in C<MySuperPragma::import> returns the name of the package that's being compiled when
+the call to C<MySuperPragma::import> (via C<MySubPragma::import>) takes place i.e. C<main> in this case.
+
 =head1 VERSION
 
-0.10
+0.11
 
 =head1 SEE ALSO
 

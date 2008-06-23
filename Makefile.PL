@@ -22,13 +22,13 @@ if ($@) {
 }
 
 WriteMakefile(
-    NAME          => 'Devel::Hints::Lexical',
-    VERSION_FROM  => 'lib/Devel/Hints/Lexical.pm',
+    NAME          => 'Devel::Pragma',
+    VERSION_FROM  => 'lib/Devel/Pragma.pm',
     PREREQ_PM     => {
         'Scope::Guard' => '0.03',
         'Test::More'   => '0'
     },
-    ABSTRACT_FROM => 'lib/Devel/Hints/Lexical.pm',
+    ABSTRACT_FROM => 'lib/Devel/Pragma.pm',
     AUTHOR        => 'chocolateboy <chocolate.boy@email.com>',
     LIBS          => [''],
     DEFINE        => '',

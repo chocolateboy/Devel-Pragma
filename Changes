@@ -1,4 +1,10 @@
-Revision history for Perl extension Devel::Hints::Lexical.
+Revision history for Perl extension Devel::Pragma.
+
+0.11  Mon Jun 23 21:03:44 2008
+    - renamed Devel::Pragma
+    - added function: ccstash
+        - added ccstash.t
+    - fixed MANIFEST (thanks Taro Nishino)
 
 0.10  Mon Jun 23 14:40:42 2008
     - fix bug that was causing my_hints to clobber %^H 

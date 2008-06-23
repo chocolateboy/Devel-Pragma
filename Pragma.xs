@@ -50,17 +50,17 @@ static OP * my_ck_require(pTHX_ OP * o) {
         }
     }
 
-    /* if Devel::Hints::Lexical is in scope, splice in our version of require */
-    if ((table = GvHV(PL_hintgv)) && (svp = hv_fetch(table, "Devel::Hints::Lexical", 21, FALSE)) && *svp && SvOK(*svp)) {
+    /* if Devel::Pragma is in scope, splice in our version of require */
+    if ((table = GvHV(PL_hintgv)) && (svp = hv_fetch(table, "Devel::Pragma", 13, FALSE)) && *svp && SvOK(*svp)) {
         o->op_ppaddr = my_require;
-	return o;
+        return o;
     }
 
     done:
     return o;
 }
 
-static OP * my_require(pTHX) {
+OP * my_require(pTHX) {
     dSP;
     SV * sv;
     HV * hh, * new_hh;
@@ -102,7 +102,15 @@ static OP * my_require(pTHX) {
     return PL_ppaddr[cUNOP->op_type](aTHX);
 }
 
-MODULE = Devel::Hints::Lexical                PACKAGE = Devel::Hints::Lexical                
+MODULE = Devel::Pragma                PACKAGE = Devel::Pragma                
+
+SV *
+ccstash()
+    PROTOTYPE:
+    CODE:
+	RETVAL = newSVpv(HvNAME(PL_curstash ? PL_curstash : PL_defstash), 0);
+    OUTPUT:
+	RETVAL
 
 void
 _scope()
@@ -119,7 +127,7 @@ _enter()
         } else {
             SCOPE_DEPTH = 1;
             /*
-             * capture the checker in scope when Devel::Hints::Lexical is used.
+             * capture the checker in scope when Devel::Pragma is used.
              * usually, this will be Perl_ck_require, though, in principle,
              * it could be a bespoke checker spliced in by another module.
              */
@@ -132,7 +140,7 @@ _leave()
     PROTOTYPE:
     CODE:
         if (SCOPE_DEPTH == 0) {
-            Perl_warn(aTHX_ "Devel::Hints::Lexical: scope underflow");
+            Perl_warn(aTHX_ "Devel::Pragma: scope underflow");
         }
 
         if (SCOPE_DEPTH > 1) {
