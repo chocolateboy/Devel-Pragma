@@ -1,12 +1,9 @@
-Devel::Hints::Lexical version 0.09
+Devel::Hints::Lexical version 0.10
 ================================
 
-Devel::Hints::Lexical exports a function that makes %^H lexically-scoped.
-
-Until perl change #33311, which isn't currently available in any stable perl release, %^H is dynamically scoped,
-rather than lexically-scoped. This means that values set in %^H are visible in modules loaded by C<use>.
-This makes pragmas leak from the scope in which they're meant to be enabled to scopes in which they're
-not. This module fixes that by making %^H lexically scoped i.e. it prevents %^H leaking across file boundaries.
+This module provides helper functions for developers of lexical pragmas. These can be used both in older versions of
+perl (from 5.6.0), which have limited support for lexical pragmas, and in the most recent versions, which have improved
+support.
 
 INSTALLATION
 

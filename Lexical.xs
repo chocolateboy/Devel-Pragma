@@ -7,12 +7,11 @@
 #include "ppport.h"
 
 static OP * (*old_ck_require)(pTHX_ OP * o) = NULL;
-static OP * devel_hints_lexical_ck_require(pTHX_ OP * o);
-static OP * devel_hints_lexical_require(pTHX);
+static OP * my_ck_require(pTHX_ OP * o);
+static OP * my_require(pTHX);
+static U32 SCOPE_DEPTH = 0;
 
-static U32 DEVEL_HINTS_LEXICAL_SCOPE_DEPTH = 0;
-
-static OP * devel_hints_lexical_ck_require(pTHX_ OP * o) {
+static OP * my_ck_require(pTHX_ OP * o) {
     HV * table;
     SV ** svp;
 
@@ -53,14 +52,15 @@ static OP * devel_hints_lexical_ck_require(pTHX_ OP * o) {
 
     /* if Devel::Hints::Lexical is in scope, splice in our version of require */
     if ((table = GvHV(PL_hintgv)) && (svp = hv_fetch(table, "Devel::Hints::Lexical", 21, FALSE)) && *svp && SvOK(*svp)) {
-        o->op_ppaddr = devel_hints_lexical_require;
+        o->op_ppaddr = my_require;
+	return o;
     }
 
     done:
     return o;
 }
 
-static OP * devel_hints_lexical_require(pTHX) {
+static OP * my_require(pTHX) {
     dSP;
     SV * sv;
     HV * hh, * new_hh;
@@ -82,13 +82,20 @@ static OP * devel_hints_lexical_require(pTHX) {
      * we need to set %^H to an empty hash rather than NULL as perl 5.10 has an assertion in scope.c
      * that expects it be non-NULL at scope's end
      */
+
     new_hh = newHV();
-    hh = GvHV(PL_hintgv);
+    hh = (HV *)SvREFCNT_inc((SV *)GvHV(PL_hintgv));
+
+    SAVEHINTS();
+
     GvHV(PL_hintgv) = new_hh;
+
     o = PL_ppaddr[cUNOP->op_type](aTHX);
+
     hv_clear(new_hh);
     hv_undef(new_hh);
     GvHV(PL_hintgv) = hh;
+
     return o;
 
     done:
@@ -98,41 +105,39 @@ static OP * devel_hints_lexical_require(pTHX) {
 MODULE = Devel::Hints::Lexical                PACKAGE = Devel::Hints::Lexical                
 
 void
+_scope()
+    PROTOTYPE:
+    CODE:
+        XSRETURN_UV(PTR2UV(GvHV(PL_hintgv)));
+
+void
 _enter()
     PROTOTYPE:
     CODE:
-        if (DEVEL_HINTS_LEXICAL_SCOPE_DEPTH > 0) {
-            ++DEVEL_HINTS_LEXICAL_SCOPE_DEPTH;
+        if (SCOPE_DEPTH > 0) {
+            ++SCOPE_DEPTH;
         } else {
-            DEVEL_HINTS_LEXICAL_SCOPE_DEPTH = 1;
+            SCOPE_DEPTH = 1;
             /*
              * capture the checker in scope when Devel::Hints::Lexical is used.
              * usually, this will be Perl_ck_require, though, in principle,
              * it could be a bespoke checker spliced in by another module.
              */
             old_ck_require = PL_check[OP_REQUIRE];
-            PL_check[OP_REQUIRE] = PL_check[OP_DOFILE] = devel_hints_lexical_ck_require;
+            PL_check[OP_REQUIRE] = PL_check[OP_DOFILE] = my_ck_require;
         }
 
 void
 _leave()
     PROTOTYPE:
     CODE:
-        if (DEVEL_HINTS_LEXICAL_SCOPE_DEPTH == 0) {
-            Perl_warn(aTHX_ "scope underflow\n");
+        if (SCOPE_DEPTH == 0) {
+            Perl_warn(aTHX_ "Devel::Hints::Lexical: scope underflow");
         }
 
-        if (DEVEL_HINTS_LEXICAL_SCOPE_DEPTH > 1) {
-            --DEVEL_HINTS_LEXICAL_SCOPE_DEPTH;
+        if (SCOPE_DEPTH > 1) {
+            --SCOPE_DEPTH;
         } else {
-            DEVEL_HINTS_LEXICAL_SCOPE_DEPTH = 0;
-            PL_check[OP_REQUIRE] = PL_check[OP_DOFILE] = old_ck_require;
-        }
-
-void
-END()
-    PROTOTYPE:
-    CODE:
-        if (old_ck_require) { /* make sure we got as far as initializing it */
+            SCOPE_DEPTH = 0;
             PL_check[OP_REQUIRE] = PL_check[OP_DOFILE] = old_ck_require;
         }

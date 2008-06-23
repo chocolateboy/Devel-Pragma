@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:                Devel-Hints-Lexical
-version:             0.09
-abstract:            make %^H lexically-scoped
+version:             0.10
+abstract:            lexical pragma utils
 license:             perl
 author:              
     - chocolateboy <chocolate.boy@email.com>

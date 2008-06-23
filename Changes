@@ -1,5 +1,10 @@
 Revision history for Perl extension Devel::Hints::Lexical.
 
+0.10  Mon Jun 23 14:40:42 2008
+    - fix bug that was causing my_hints to clobber %^H 
+    - added new_scope function
+    - removed my_hints aliases
+
 0.09  Sat Jun 21 11:06:31 2008
     - bugfix: return reference to %^H when already in scope
 

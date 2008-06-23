@@ -7,7 +7,7 @@ no warnings 'portable'; # suppress "v-string in use/require non-portable" warnin
 
 use if (-d 't'), lib => 't'; 
 
-use Test::More tests => 15;
+use Test::More tests => 25;
 use Devel::Hints::Lexical qw(my_hints);
 use File::Spec;
 
@@ -18,10 +18,10 @@ use 5.006_000;
 use 5.6.0;
 use v5.6.0;
 
-my $already_fixed;
-
 # we can't assume brokenness as the tests may be
 # run against bleadperls with change #33311 applied
+
+my $already_fixed;
 
 {
     BEGIN {
@@ -44,8 +44,11 @@ my $already_fixed;
         require dhl_test_2;
     }
 
-    my $test = dhl_test_2::test();
-    ok ($test, 'compile-time require');
+    BEGIN {
+        is($^H{'Devel::Hints::Lexical::Test'}, 1, "compile-time require doesn't clobber %^H");
+    }
+
+    ok (dhl_test_2::test(), 'compile-time require');
 }
 
 {
@@ -56,8 +59,7 @@ my $already_fixed;
 
     require dhl_test_3;
 
-    my $test = dhl_test_3::test();
-    ok ($test, 'runtime require');
+    ok (dhl_test_3::test(), 'runtime require');
 }
 
 {
@@ -68,8 +70,11 @@ my $already_fixed;
 
     use dhl_test_4;
 
-    my $test = dhl_test_4::test();
-    ok ($test, 'use');
+    BEGIN {
+        is($^H{'Devel::Hints::Lexical::Test'}, 1, "use doesn't clobber %^H");
+    }
+
+    ok (dhl_test_4::test(), 'use');
 }
 
 {
@@ -79,8 +84,12 @@ my $already_fixed;
     }
 
     use dhl_test_4;
-    my $test = dhl_test_4::test();
-    ok($test, 'reuse');
+
+    BEGIN {
+        is($^H{'Devel::Hints::Lexical::Test'}, 1, "reuse doesn't clobber %^H");
+    }
+
+    ok(dhl_test_4::test(), 'reuse');
 }
 
 {
@@ -94,8 +103,11 @@ my $already_fixed;
         do $file;
     }
 
-    my $test = dhl_test_5::test();
-    ok($test, 'compile-time do FILE');
+    BEGIN {
+        is($^H{'Devel::Hints::Lexical::Test'}, 1, "compile-time do FILE doesn't clobber %^H");
+    }
+
+    ok(dhl_test_5::test(), 'compile-time do FILE');
 }
 
 {
@@ -104,13 +116,10 @@ my $already_fixed;
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
-    BEGIN {
-        my $file = (-d 't') ? File::Spec->catfile('t', 'dhl_test_6.pm') : 'dhl_test_6.pm';
-        do $file;
-    }
+    my $file = (-d 't') ? File::Spec->catfile('t', 'dhl_test_6.pm') : 'dhl_test_6.pm';
+    do $file;
 
-    my $test = dhl_test_6::test();
-    ok($test, 'runtime do FILE');
+    ok(dhl_test_6::test(), 'runtime do FILE');
 }
 
 eval {
@@ -120,8 +129,12 @@ eval {
     }
 
     use dhl_test_7;
-    my $test = dhl_test_7::test();
-    ok($test, 'eval BLOCK');
+
+    BEGIN {
+        is($^H{'Devel::Hints::Lexical::Test'}, 1, "eval block doesn't clobber %^H");
+    }
+
+    ok(dhl_test_7::test(), 'eval BLOCK');
 };
 
 ok(not($@), 'eval BLOCK OK');
@@ -134,8 +147,12 @@ eval q|
         }
 
         use dhl_test_8;
-        my $test = dhl_test_7::test();
-        ok($test, 'eval EXPR');
+
+        BEGIN {
+            is($^H{'Devel::Hints::Lexical::Test'}, 1, "eval EXPR doesn't clobber %^H");
+        }
+
+        ok(dhl_test_7::test(), 'eval EXPR');
     }
 |;
 
@@ -150,28 +167,40 @@ ok(not($@), 'eval EXPR OK');
 
         use dhl_test_9;
 
-        my $test = dhl_test_9::test();
-        ok ($test, 'scope');
+        BEGIN {
+            is($^H{'Devel::Hints::Lexical::Test'}, 1, "scope: %^H isn't clobbered");
+        }
+
+        ok (dhl_test_9::test(), 'scope');
 
         {
             use dhl_test_10;
 
-            my $test = dhl_test_10::test();
-            ok ($test, 'nested scope');
+            BEGIN {
+                is($^H{'Devel::Hints::Lexical::Test'}, 1, "nested scope: %^H isn't clobbered");
+            }
+
+            ok (dhl_test_10::test(), 'nested scope');
         }
+
+        use dhl_test_11;
+
+        BEGIN {
+            is($^H{'Devel::Hints::Lexical::Test'}, 1, "scope again: %^H isn't clobbered");
+        }
+
+        ok (dhl_test_11::test(), 'scope again');
     }
 
     BEGIN {
         $^H{'Devel::Hints::Lexical::Test'} = 1;
     }
 
-    use dhl_test_11;
-
-    my $test = dhl_test_11::test();
+    use dhl_test_12;
 
     SKIP: {
         skip('patchlevel > 33311', 1) if ($already_fixed);
-        ok (not($test), 'outer scope');
+        ok (not(dhl_test_12::test()), 'outer scope');
     }
 }
 
