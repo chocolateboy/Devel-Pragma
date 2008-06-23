@@ -21,9 +21,6 @@ t/superclass_3.pm
 t/superclass_4.pm
 t/superclass_5.pm
 t/test_1.pm
-t/test_10.pm
-t/test_11.pm
-t/test_12.pm
 t/test_2.pm
 t/test_3.pm
 t/test_4.pm
@@ -32,3 +29,6 @@ t/test_6.pm
 t/test_7.pm
 t/test_8.pm
 t/test_9.pm
+t/test_10.pm
+t/test_11.pm
+t/test_12.pm

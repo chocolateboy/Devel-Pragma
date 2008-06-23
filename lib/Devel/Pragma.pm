@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 use XSLoader;
 use Scope::Guard;
@@ -17,7 +17,12 @@ our @EXPORT_TAGS = (':all' => [ @EXPORT_OK ]);
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
-sub new_scope() {
+sub new_scope(;$) {
+    my $caller = shift || caller;
+
+    $^H |= 0x80020000;
+    $^H{'Devel::Pragma'} = 1;
+
     # this is %^H as an integer - it changes as scopes are entered/exited i.e. it's a unique
     # identifier for the currently compiling scope (the scope in which new_scope 
     # is called)
@@ -33,18 +38,15 @@ sub new_scope() {
     # set HINT_LOCALIZE_HH (0x20000) + an unused bit (0x80000000) so that
     # this module (which can't use itself) can work around the %^H bug
 
-    $^H |= 0x80020000;
-    $^H{'Devel::Pragma'} = 1;
-
     my $current_scope = _scope();
-    my $key = 'Devel::Pragma::Scope::' . caller;
-    my $old_scope = exists($^H{$key}) ? $^H{$key} : 0;
+    my $id = "Devel::Pragma::Scope::$caller";
+    my $old_scope = exists($^H{$id}) ? $^H{$id} : 0;
     my $new_scope; # is this a scope in which new_scope has not previously been called?
 
     if ($current_scope == $old_scope) {
         $new_scope = 0;
     } else {
-        $^H{$key} = $current_scope;
+        $^H{$id} = $current_scope;
         $new_scope = 1;
     }
 
@@ -78,12 +80,13 @@ Devel::Pragma - helper functions for developers of lexical pragmas
   use Devel::Pragma qw(my_hints ccstash new_scope);
 
   sub import {
+      my ($class, %options) = @_;
       my $hints = my_hints;   # lexically-scoped %^H
       my $caller = ccstash(); # currently-compiling stash
 
       $hints->{MyPragma} = 1;
 
-      if (new_scope) {
+      if (new_scope($class)) {
           ...
       }
   }
@@ -119,6 +122,22 @@ The return value is a reference to %^H.
 
 This function returns true if the currently-compiling scope differs from the scope being compiled the last
 time C<new_scope> was called. Subsequent calls will return false while the same scope is being compiled.
+
+C<new_scope> takes an optional parameter that is used to uniquely identify its caller. This should usually be
+supplied as the pragma's class name unless C<new_scope> is called by a module that is not intended
+to be subclassed. e.g.
+
+    package MyPragma;
+
+    sub import {
+        my ($class, %options) = @_;
+
+        if (new_scope($class)) {
+            ...
+        }
+    }
+
+If not supplied, the identifier defaults to the name of the calling package.
 
 =head2 ccstash
 
@@ -164,7 +183,7 @@ the call to C<MySuperPragma::import> (via C<MySubPragma::import>) takes place i.
 
 =head1 VERSION
 
-0.11
+0.12
 
 =head1 SEE ALSO
 
