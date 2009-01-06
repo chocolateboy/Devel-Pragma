@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.30';
+our $VERSION = '0.31';
 
 use XSLoader;
 use B::Hooks::EndOfScope;
@@ -91,7 +91,7 @@ Devel::Pragma - helper functions for developers of lexical pragmas
 =head1 DESCRIPTION
 
 This module provides helper functions for developers of lexical pragmas. These can be used both in older versions of
-perl (from 5.6.0), which have limited support for lexical pragmas, and in the most recent versions, which have improved
+perl (from 5.8.0), which have limited support for lexical pragmas, and in the most recent versions, which have improved
 support.
 
 =head1 EXPORTS
@@ -181,7 +181,7 @@ the call to C<MySuperPragma::import> (via C<MySubPragma::import>) takes place i.
 
 =head1 VERSION
 
-0.30
+0.31
 
 =head1 SEE ALSO
 

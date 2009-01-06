@@ -1,4 +1,4 @@
-use 5.006;
+use 5.008;
 
 use ExtUtils::MakeMaker;
 use Config;
@@ -25,7 +25,8 @@ WriteMakefile(
     NAME          => 'Devel::Pragma',
     VERSION_FROM  => 'lib/Devel/Pragma.pm',
     PREREQ_PM     => {
-        'Test::More' => '0'
+        'Test::More'           => '0',
+        'B::Hooks::EndOfScope' => '0.05',
     },
     ABSTRACT_FROM => 'lib/Devel/Pragma.pm',
     AUTHOR        => 'chocolateboy <chocolate.boy@email.com>',

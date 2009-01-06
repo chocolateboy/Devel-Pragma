@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.31  Tue Jan 6 19:55:08 2009
+    - add missing dependency on B::Hooks::EndOfScope (which bumps the minimum perl version up to 5.8)
+
 0.30  Tue Jan 6 19:03:06 2009
     - more robust/less disruptive %^H clearance
     - code cleanup
