@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Devel-Pragma
-version:            0.21
+version:            0.22
 abstract:           helper functions for developers of lexical pragmas
 author:
     - chocolateboy <chocolate.boy@email.com>

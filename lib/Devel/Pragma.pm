@@ -5,7 +5,7 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 use XSLoader;
 
@@ -169,7 +169,7 @@ the call to C<MySuperPragma::import> (via C<MySubPragma::import>) takes place i.
 
 =head1 VERSION
 
-0.21
+0.22
 
 =head1 SEE ALSO
 

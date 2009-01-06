@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.22  Tue Jan 6 10:19:40 2009
+    - refine exclusions
+
 0.21  Tue Jan 6 08:10:45 2009
     - Fix optimize flags in Makefile.PL
 
