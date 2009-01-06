@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.21  Tue Jan 6 08:10:45 2009
+    - Fix optimize flags in Makefile.PL
+
 0.20  Tue Jan 6 07:16:42 2009
     - apply the %^H leak fix (by patching PL_ppaddr[OP_REQUIRE] and PL_ppaddr[OP_DOFILE])
       globally rather than lexically

@@ -32,7 +32,6 @@ WriteMakefile(
     LIBS          => [''],
     DEFINE        => '',
     INC           => '-I.',
-    # OPTIMIZE      => $optimize,
-    OPTIMIZE      => '-g',
+    OPTIMIZE      => $optimize,
     ($ExtUtils::MakeMaker::VERSION >= 6.31 ? (LICENSE => 'perl') : ()),
 );
