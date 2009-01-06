@@ -1,5 +1,10 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.30  Tue Jan 6 19:03:06 2009
+    - more robust/less disruptive %^H clearance
+    - code cleanup
+    - make my_hints apply #33311 lexically (again)
+
 0.22  Tue Jan 6 10:19:40 2009
     - refine exclusions
 

@@ -5,9 +5,10 @@ use 5.006;
 use strict;
 use warnings;
 
-our $VERSION = '0.22';
+our $VERSION = '0.30';
 
 use XSLoader;
+use B::Hooks::EndOfScope;
 
 use base qw(Exporter);
 
@@ -16,15 +17,11 @@ our @EXPORT_TAGS = (':all' => [ @EXPORT_OK ]);
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
-sub my_hints() {
-    # set HINT_LOCALIZE_HH (0x20000)
-    $^H |= 0x20000;
-    return \%^H;
-}
-
 sub new_scope(;$) {
     my $caller = shift || caller;
-    my $hints = my_hints;
+    # set HINT_LOCALIZE_HH (0x20000)
+    $^H |= 0x20000;
+    my $hints = \%^H;
 
     # this is %^H as an integer - it changes as scopes are entered/exited i.e. it's a unique
     # identifier for the currently-compiling scope (the scope in which new_scope 
@@ -51,6 +48,18 @@ sub new_scope(;$) {
     }
 
     return $new_scope;
+}
+
+sub my_hints() {
+    # set HINT_LOCALIZE_HH (0x20000)
+    $^H |= 0x20000;
+
+    if (new_scope) {
+        _enter();
+        on_scope_end \&_leave;
+    }
+
+    return \%^H;
 }
 
 1;
@@ -85,12 +94,6 @@ This module provides helper functions for developers of lexical pragmas. These c
 perl (from 5.6.0), which have limited support for lexical pragmas, and in the most recent versions, which have improved
 support.
 
-In addition to the helper functions, this module applies a global fix that makes %^H lexically-scoped
-rather than dynamically-scoped. Until perl change #33311, which isn't currently available in any stable
-perl release, values set in %^H are visible in modules loaded by C<use>, C<require> and C<do FILE>.
-This makes pragmas leak from the scope in which they're meant to be enabled into scopes in which
-they're not. This module applies a fix which ensures that values in %^H no longer leak across file boundaries.
-
 =head1 EXPORTS
 
 Devel::Pragma exports the following functions on demand. They can all be imported at once by using the C<:all> tag. e.g.
@@ -99,10 +102,19 @@ Devel::Pragma exports the following functions on demand. They can all be importe
 
 =head2 my_hints
 
-C<my_hints> sets the appropriate flag to make %^H lexically-scoped, and returns a reference to %^H. More
-precisely, it sets the flag in $^H that makes %^H copy and restore its values as scopes are entered and exited.
-The fix that clears %^H before C<use>, C<require> and C<do FILE> statements is applied globally when
-the Devel::Pragma module is first loaded.
+Until perl change #33311, which isn't currently available in any stable
+perl release, values set in %^H are visible in modules loaded by C<use>, C<require> and C<do FILE>.
+This makes pragmas leak from the scope in which they're meant to be enabled into scopes in which
+they're not. C<my_hints> fixes that by making %^H lexically scoped i.e. it prevents %^H leaking
+across file boundaries.
+
+C<my_hints> installs versions of perl's C<require> and C<do FILE> builtins in the
+currently-compiling scope which clear %^H before they execute and restore the previous %^H afterwards.
+Thus it can be thought of a lexically-scoped backport of change #33311.
+
+Note that C<my_hints> also sets the $^H bit that "localizes" (or in this case "lexicalizes") %^H.
+
+The return value is a reference to %^H.
 
 =head2 new_scope
 
@@ -169,7 +181,7 @@ the call to C<MySuperPragma::import> (via C<MySubPragma::import>) takes place i.
 
 =head1 VERSION
 
-0.22
+0.30
 
 =head1 SEE ALSO
 

@@ -15,18 +15,56 @@
 #define NEED_sv_2pv_flags
 #include "ppport.h"
 
+#ifndef HvRITER_set
+#  define HvRITER_set(hv,r)        (HvRITER(hv) = r)
+#endif
+#ifndef HvEITER_set
+#  define HvEITER_set(hv,r)        (HvEITER(hv) = r)
+#endif
+
+#ifndef HvRITER_get
+#  define HvRITER_get HvRITER
+#endif
+#ifndef HvEITER_get
+#  define HvEITER_get HvEITER
+#endif
+
 static OP * (*old_require)(pTHX) = NULL;
 static OP * my_require(pTHX);
+static void dp_restore_hh(pTHX_ HV *const hh, HV *const temp_hh);
+static U32 SCOPE_DEPTH = 0;
+
+/* TODO: more recent perls have a dedicated Perl_hv_copy_hints_hv in hv.c */
+static void dp_restore_hh(pTHX_ HV *const hh, HV *const temp_hh) {
+    HE *entry;
+    const I32 riter = HvRITER_get(temp_hh);
+    HE * const eiter = HvEITER_get(temp_hh);
+
+    hv_iterinit(temp_hh);
+
+    while ((entry = hv_iternext(temp_hh))) {
+        (void)hv_store(hh, HeKEY(entry), HeKLEN(entry), newSVsv(HeVAL(entry)), HeHASH(entry));
+    }
+
+    HvRITER_set(temp_hh, riter);
+    HvEITER_set(temp_hh, eiter);
+
+    hv_clear(temp_hh);
+    hv_undef(temp_hh);
+}
 
 /*
  * much of this is copypasta from pp_require in pp_ctl.c
- * this ensures we leave %^H intact unless absolutely necessary
+ *
+ * the various checks that delegate to the original function (goto done) ensure
+ * we only modify %^H for code paths that use it i.e. we only modify %^H for
+ * cases that reach the fix in patch #33311
  */
 OP * my_require(pTHX) {
     dSP;
     SV * sv;
     OP * o;
-    HV *old_hh, *new_hh;
+    HV *hh, *temp_hh;
     const char *name;
     STRLEN len;
     char * unixname;
@@ -93,22 +131,31 @@ OP * my_require(pTHX) {
         }
     }
 
-    /*
-     * we need to set %^H to an empty hash rather than NULL as perl 5.10 has an assertion in scope.c
-     * that expects it be non-NULL at scope's end
+    /* 
+     * after much trial and error, it turns out the most reliable and least obtrusive way to
+     * prevent %^H leaking across require() is to hv_clear it before the call and to restore its values
+     * (taking care to preserve any magic) afterwards
      */
-
-    new_hh = newHV();
-    old_hh = GvHV(PL_hintgv);
-
-    SAVEHINTS();
-
-    GvHV(PL_hintgv) = new_hh;
+    hh = GvHV(PL_hintgv);
+#ifdef hv_copy_hints_hv
+    temp_hh = hv_copy_hints_hv(aTHX_ hh);
+#else
+#ifdef Perl_hv_copy_hints_hv
+    temp_hh = Perl_hv_copy_hints_hv(aTHX_ hh);
+#else
+#ifdef newHVhv
+    temp_hh = newHVhv(hh);
+#else
+    temp_hh = Perl_newHVhv(aTHX_ hh);
+#endif
+#endif
+#endif
+        
+    hv_clear(hh); /* clear %^H */
 
     o = CALL_FPTR(old_require)(aTHX);
 
-    hv_clear(new_hh);
-    hv_undef(new_hh);
+    dp_restore_hh(aTHX_ hh, temp_hh); /* restore %^H's values from the backup */
 
     return o;
 
@@ -117,17 +164,6 @@ OP * my_require(pTHX) {
 }
 
 MODULE = Devel::Pragma                PACKAGE = Devel::Pragma                
-
-BOOT:
-    /*
-     * capture the function in scope when Devel::Pragma is bootstrapped.
-     * usually, this will be Perl_pp_require, though, in principle,
-     * it could be a bespoke function spliced in by another module.
-     */
-    old_require = PL_ppaddr[OP_REQUIRE];
-    if (old_require != my_require) {
-        PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = my_require;
-    }
 
 SV *
 ccstash()
@@ -142,3 +178,37 @@ _scope()
     PROTOTYPE:
     CODE:
         XSRETURN_UV(PTR2UV(GvHV(PL_hintgv)));
+
+void
+_enter()
+    PROTOTYPE:
+    CODE:
+        if (SCOPE_DEPTH > 0) {
+            ++SCOPE_DEPTH;
+        } else {
+            SCOPE_DEPTH = 1;
+            /*
+             * capture the function in scope when this is called.
+             * usually, this will be Perl_pp_require, though, in principle,
+             * it could be a bespoke function spliced in by another module.
+             */
+            if (PL_ppaddr[OP_REQUIRE] != my_require) {
+                old_require = PL_ppaddr[OP_REQUIRE];
+                PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = my_require;
+            }
+        }
+
+void
+_leave()
+    PROTOTYPE:
+    CODE:
+        if (SCOPE_DEPTH == 0) {
+            Perl_warn(aTHX_ "Devel::Pragma: scope underflow");
+        }
+
+        if (SCOPE_DEPTH > 1) {
+            --SCOPE_DEPTH;
+        } else {
+            SCOPE_DEPTH = 0;
+            PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = old_require;
+        }
