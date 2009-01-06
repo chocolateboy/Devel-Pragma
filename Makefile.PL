@@ -25,14 +25,14 @@ WriteMakefile(
     NAME          => 'Devel::Pragma',
     VERSION_FROM  => 'lib/Devel/Pragma.pm',
     PREREQ_PM     => {
-        'Scope::Guard' => '0.03',
-        'Test::More'   => '0'
+        'Test::More' => '0'
     },
     ABSTRACT_FROM => 'lib/Devel/Pragma.pm',
     AUTHOR        => 'chocolateboy <chocolate.boy@email.com>',
     LIBS          => [''],
     DEFINE        => '',
     INC           => '-I.',
-    OPTIMIZE      => $optimize,
+    # OPTIMIZE      => $optimize,
+    OPTIMIZE      => '-g',
     ($ExtUtils::MakeMaker::VERSION >= 6.31 ? (LICENSE => 'perl') : ()),
 );

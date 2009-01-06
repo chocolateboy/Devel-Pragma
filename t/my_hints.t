@@ -7,7 +7,7 @@ no warnings 'portable'; # suppress "v-string in use/require non-portable" warnin
 
 use if (-d 't'), lib => 't'; 
 
-use Test::More tests => 25;
+use Test::More tests => 24;
 use Devel::Pragma qw(my_hints);
 use File::Spec;
 
@@ -17,22 +17,6 @@ use 5.006;
 use 5.006_000;
 use 5.6.0;
 use v5.6.0;
-
-# we can't assume brokenness as the tests may be
-# run against bleadperls with change #33311 applied
-
-my $already_fixed;
-
-{
-    BEGIN {
-        $^H{'Devel::Pragma::Test'} = 1;
-    }
-
-    BEGIN {
-        use test_1;
-        $already_fixed = test_1::test();
-    }
-}
 
 {
     BEGIN {
@@ -159,56 +143,46 @@ eval q|
 ok(not($@), 'eval EXPR OK');
 
 {
-    {
-        BEGIN {
-            my_hints();
-            $^H{'Devel::Pragma::Test'} = 1;
-        }
-
-        use test_9;
-
-        BEGIN {
-            is($^H{'Devel::Pragma::Test'}, 1, "scope: %^H isn't clobbered");
-        }
-
-        ok (test_9::test(), 'scope');
-
-        {
-            use test_10;
-
-            BEGIN {
-                is($^H{'Devel::Pragma::Test'}, 1, "nested scope: %^H isn't clobbered");
-            }
-
-            ok (test_10::test(), 'nested scope');
-        }
-
-        use test_11;
-
-        BEGIN {
-            is($^H{'Devel::Pragma::Test'}, 1, "scope again: %^H isn't clobbered");
-        }
-
-        ok (test_11::test(), 'scope again');
-    }
-
     BEGIN {
+        my_hints();
         $^H{'Devel::Pragma::Test'} = 1;
     }
 
-    use test_12;
+    use test_9;
 
-    SKIP: {
-        skip('patchlevel > 33311', 1) if ($already_fixed);
-        ok (not(test_12::test()), 'outer scope');
+    BEGIN {
+        is($^H{'Devel::Pragma::Test'}, 1, "scope: %^H isn't clobbered");
     }
+
+    ok (test_9::test(), 'scope');
+
+    {
+        use test_10;
+
+        BEGIN {
+            is($^H{'Devel::Pragma::Test'}, 1, "nested scope: %^H isn't clobbered");
+        }
+
+        ok (test_10::test(), 'nested scope');
+    }
+
+    use test_11;
+
+    BEGIN {
+        is($^H{'Devel::Pragma::Test'}, 1, "scope again: %^H isn't clobbered");
+    }
+
+    ok (test_11::test(), 'scope again');
 }
 
 {
     BEGIN {
         $^H{'Devel::Pragma::Test'} = 1;
+        my_hints;
     }
 
-    ok (my_hints->{'Devel::Pragma'}, 'returns a reference to %^H');
-    ok (my_hints->{'Devel::Pragma'}, 'returns a reference to %^H when already in scope');
+    BEGIN {
+        ok((($^H & 0x20000) == 0x20000), 'my_hints sets LOCALIZE_HH');
+        is(my_hints->{'Devel::Pragma::Test'}, 1, 'my_hints returns a reference to %^H');
+    }
 }

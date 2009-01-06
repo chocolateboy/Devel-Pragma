@@ -1,5 +1,12 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.20  Tue Jan 6 07:16:42 2009
+    - apply the %^H leak fix (by patching PL_ppaddr[OP_REQUIRE] and PL_ppaddr[OP_DOFILE])
+      globally rather than lexically
+    - added leak.t to confirm the bug on perls prior to patch #33311 if Devel::Pragma is not used
+    - added new_scope.t
+    - documentation tweaks
+
 0.12  Mon Jun 23 23:54:04 2008
     - added an optional argument to new_scope to distinguish
       between different classes that share the same code

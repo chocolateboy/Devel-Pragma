@@ -1,4 +1,4 @@
-Devel::Pragma version 0.12
+Devel::Pragma version 0.20
 ================================
 
 This module provides helper functions for developers of lexical pragmas. These can be used both in older versions of
@@ -18,12 +18,12 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-    Scope::Guard
+    if
     Test::More
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2008 by chocolateboy
+Copyright (C) 2008-2009 by chocolateboy
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,
