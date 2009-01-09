@@ -1,5 +1,13 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.32  Fri Jan 9 15:26:21 2009
+    - added scope() - unique identifier for the currently-compiling scope
+        - added scope.t
+    - set $^H bit on import
+    - fix :all tag
+        - added tag.t
+    - fix compile-time lexical scoping (leak.t)
+
 0.31  Tue Jan 6 19:55:08 2009
     - add missing dependency on B::Hooks::EndOfScope (which bumps the minimum perl version up to 5.8)
 

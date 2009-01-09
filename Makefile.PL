@@ -13,19 +13,10 @@ if ($Config{gccversion}) {
     $optimize = $Config{optimize};
 }
 
-# older MakeMakers don't correctly assess whether if.pm is installed
-eval 'require "if.pm"';
-
-if ($@) {
-    warn "Warning: prerequisite if 0 not found", $/;
-    exit 0;
-}
-
 WriteMakefile(
     NAME          => 'Devel::Pragma',
     VERSION_FROM  => 'lib/Devel/Pragma.pm',
     PREREQ_PM     => {
-        'Test::More'           => '0',
         'B::Hooks::EndOfScope' => '0.05',
     },
     ABSTRACT_FROM => 'lib/Devel/Pragma.pm',

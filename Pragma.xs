@@ -11,6 +11,7 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#include "assert.h"
 
 #define NEED_sv_2pv_flags
 #include "ppport.h"
@@ -29,13 +30,15 @@
 #  define HvEITER_get HvEITER
 #endif
 
-static OP * (*old_require)(pTHX) = NULL;
-static OP * my_require(pTHX);
-static void dp_restore_hh(pTHX_ HV *const hh, HV *const temp_hh);
-static U32 SCOPE_DEPTH = 0;
+STATIC OP * (*old_require)(pTHX) = NULL;
+STATIC OP * my_require(pTHX);
+STATIC void dp_restore_hh(pTHX_ HV *const hh, HV *const temp_hh);
+STATIC void setup(pTHX);
+STATIC void teardown(pTHX);
+STATIC U32 SCOPE_DEPTH = 0;
 
 /* TODO: more recent perls have a dedicated Perl_hv_copy_hints_hv in hv.c */
-static void dp_restore_hh(pTHX_ HV *const hh, HV *const temp_hh) {
+STATIC void dp_restore_hh(pTHX_ HV *const hh, HV *const temp_hh) {
     HE *entry;
     const I32 riter = HvRITER_get(temp_hh);
     HE * const eiter = HvEITER_get(temp_hh);
@@ -69,6 +72,7 @@ OP * my_require(pTHX) {
     STRLEN len;
     char * unixname;
     STRLEN unixlen;
+    U32 compile_time = 0;
 #ifdef VMS
     int vms_unixname = 0;
 #endif
@@ -153,7 +157,26 @@ OP * my_require(pTHX) {
         
     hv_clear(hh); /* clear %^H */
 
+    /*
+     * SCOPE_DEPTH will always be > 0 at compile-time, otherwise we wouldn't be here;
+     * however, it will be 0 at run time. And, in fact, that's a good way to distinguish
+     * between the two
+     */
+
+    if (SCOPE_DEPTH > 0) { /* compile-time */
+        compile_time = 1;
+        assert(SCOPE_DEPTH == 1);
+        teardown(aTHX); /* this module is itself lexically-scoped, and therefore is disabled across file boundaries */
+        assert(SCOPE_DEPTH == 0);
+    }
+
     o = CALL_FPTR(old_require)(aTHX);
+
+    if (compile_time) {
+        assert(SCOPE_DEPTH == 0);
+        setup(aTHX); /* re-enable once the file has been compiled */
+        assert(SCOPE_DEPTH == 1);
+    }
 
     dp_restore_hh(aTHX_ hh, temp_hh); /* restore %^H's values from the backup */
 
@@ -161,6 +184,36 @@ OP * my_require(pTHX) {
 
     done:
     return CALL_FPTR(old_require)(aTHX);
+}
+
+STATIC void teardown(pTHX) {
+    if (SCOPE_DEPTH == 0) {
+        Perl_warn(aTHX_ "Devel::Pragma: scope underflow");
+    }
+
+    if (SCOPE_DEPTH > 1) {
+        --SCOPE_DEPTH;
+    } else {
+        SCOPE_DEPTH = 0;
+        PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = old_require;
+    }
+}
+
+STATIC void setup(pTHX) {
+    if (SCOPE_DEPTH > 0) {
+        ++SCOPE_DEPTH;
+    } else {
+        SCOPE_DEPTH = 1;
+        /*
+         * capture the function in scope when this is called.
+         * usually, this will be Perl_pp_require, though, in principle,
+         * it could be a bespoke function spliced in by another module.
+         */
+        if (PL_ppaddr[OP_REQUIRE] != my_require) {
+            old_require = PL_ppaddr[OP_REQUIRE];
+            PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = my_require;
+        }
+    }
 }
 
 MODULE = Devel::Pragma                PACKAGE = Devel::Pragma                
@@ -183,32 +236,10 @@ void
 _enter()
     PROTOTYPE:
     CODE:
-        if (SCOPE_DEPTH > 0) {
-            ++SCOPE_DEPTH;
-        } else {
-            SCOPE_DEPTH = 1;
-            /*
-             * capture the function in scope when this is called.
-             * usually, this will be Perl_pp_require, though, in principle,
-             * it could be a bespoke function spliced in by another module.
-             */
-            if (PL_ppaddr[OP_REQUIRE] != my_require) {
-                old_require = PL_ppaddr[OP_REQUIRE];
-                PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = my_require;
-            }
-        }
+        setup(aTHX);
 
 void
 _leave()
     PROTOTYPE:
     CODE:
-        if (SCOPE_DEPTH == 0) {
-            Perl_warn(aTHX_ "Devel::Pragma: scope underflow");
-        }
-
-        if (SCOPE_DEPTH > 1) {
-            --SCOPE_DEPTH;
-        } else {
-            SCOPE_DEPTH = 0;
-            PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = old_require;
-        }
+        teardown(aTHX);

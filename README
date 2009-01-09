@@ -1,4 +1,4 @@
-Devel::Pragma version 0.31
+Devel::Pragma version 0.32
 ================================
 
 This module provides helper functions for developers of lexical pragmas. These can be used both in older versions of
@@ -18,8 +18,6 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-    if
-    Test::More
     B::Hooks::EndOfScope
 
 COPYRIGHT AND LICENCE

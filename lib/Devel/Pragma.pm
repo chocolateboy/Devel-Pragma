@@ -1,27 +1,55 @@
 package Devel::Pragma;
 
-use 5.006;
+use 5.008;
 
 use strict;
 use warnings;
 
-our $VERSION = '0.31';
+our $VERSION = '0.32';
 
 use XSLoader;
 use B::Hooks::EndOfScope;
+use Carp qw(carp);
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(my_hints new_scope ccstash);
-our @EXPORT_TAGS = (':all' => [ @EXPORT_OK ]);
+our @EXPORT_OK = qw(my_hints new_scope ccstash scope);
+our %EXPORT_TAGS = (all => [ @EXPORT_OK ]);
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
-sub new_scope(;$) {
-    my $caller = shift || caller;
+sub my_hints() {
     # set HINT_LOCALIZE_HH (0x20000)
     $^H |= 0x20000;
     my $hints = \%^H;
+
+    unless ($hints->{'Devel::Pragma'}) {
+        $hints->{'Devel::Pragma'} = 1;
+        _enter();
+        on_scope_end \&_leave;
+    }
+
+    return $hints;
+}
+
+sub _check_hints() {
+    unless ($^H & 0x20000) {
+        carp('Devel::Pragma: unexpected $^H (HINT_LOCALIZE_HH bit not set) - setting it now, but results may be unreliable');
+    }
+    return my_hints; # create it if it doesn't exist - in some perls, it starts out NULL
+}
+
+sub scope() {
+    _check_hints;
+    _scope();
+}
+
+sub new_scope(;$) {
+    my $caller = shift || caller;
+
+    _check_hints;
+
+    my $hints = my_hints();
 
     # this is %^H as an integer - it changes as scopes are entered/exited i.e. it's a unique
     # identifier for the currently-compiling scope (the scope in which new_scope 
@@ -31,11 +59,11 @@ sub new_scope(;$) {
     # note: we need to call this *after* %^H is referenced (and possibly autovivified) above
     #
     # every time new_scope is called, we write this scope ID to $^H{"Devel::Pragma::Scope::$caller"}.
-    # if $^H{"Devel::Pragma::Scope::$caller"} == _scope() (i.e. the stored scope ID is the same as the
+    # if $^H{"Devel::Pragma::Scope::$caller"} == scope() (i.e. the stored scope ID is the same as the
     # current scope ID), then we're augmenting the current scope; otherwise we're in a new scope - i.e.
     # a nested or outer scope that didn't previously "use MyPragma"
 
-    my $current_scope = _scope();
+    my $current_scope = scope();
     my $id = "Devel::Pragma::Scope::$caller";
     my $old_scope = exists($hints->{$id}) ? $hints->{$id} : 0;
     my $new_scope; # is this a scope in which new_scope has not previously been called?
@@ -50,16 +78,10 @@ sub new_scope(;$) {
     return $new_scope;
 }
 
-sub my_hints() {
-    # set HINT_LOCALIZE_HH (0x20000)
-    $^H |= 0x20000;
-
-    if (new_scope) {
-        _enter();
-        on_scope_end \&_leave;
-    }
-
-    return \%^H;
+sub import {
+    my $class = shift;
+    $^H |= 0x20000; # set HINT_LOCALIZE_HH (0x20000)
+    $class->export_to_level(1, undef, @_);
 }
 
 1;
@@ -86,6 +108,8 @@ Devel::Pragma - helper functions for developers of lexical pragmas
       if (new_scope($class)) {
           ...
       }
+
+      my $scope_id = scope();
   }
 
 =head1 DESCRIPTION
@@ -103,13 +127,13 @@ Devel::Pragma exports the following functions on demand. They can all be importe
 =head2 my_hints
 
 Until perl change #33311, which isn't currently available in any stable
-perl release, values set in %^H are visible in modules loaded by C<use>, C<require> and C<do FILE>.
+perl release, values set in %^H are visible in files compiled by C<use>, C<require> and C<do FILE>.
 This makes pragmas leak from the scope in which they're meant to be enabled into scopes in which
 they're not. C<my_hints> fixes that by making %^H lexically scoped i.e. it prevents %^H leaking
 across file boundaries.
 
 C<my_hints> installs versions of perl's C<require> and C<do FILE> builtins in the
-currently-compiling scope which clear %^H before they execute and restore the previous %^H afterwards.
+currently-compiling scope which clear %^H before they execute and restore its values afterwards.
 Thus it can be thought of a lexically-scoped backport of change #33311.
 
 Note that C<my_hints> also sets the $^H bit that "localizes" (or in this case "lexicalizes") %^H.
@@ -136,6 +160,15 @@ to be subclassed. e.g.
     }
 
 If not supplied, the identifier defaults to the name of the calling package.
+
+=head2 scope
+
+This returns an integer that uniquely identifies the currently-compiling scope. It can be used to
+distinguish or compare scopes.
+
+A warning is issued if C<scope> (or C<new_scope>) is called in a context in which it doesn't make sense i.e. if the
+scoped behaviour of %^H has not been enabled - either by explcitly modifying $^H, or by calling
+C<use Devel::Pragma> or C<my_hints>.
 
 =head2 ccstash
 
@@ -181,7 +214,7 @@ the call to C<MySuperPragma::import> (via C<MySubPragma::import>) takes place i.
 
 =head1 VERSION
 
-0.31
+0.32
 
 =head1 SEE ALSO
 

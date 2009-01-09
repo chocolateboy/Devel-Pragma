@@ -9,9 +9,12 @@ README
 t/01_use.t
 t/ccstash.t
 t/leak.t
+t/lexical1.pm
+t/lexical2.pm
 t/my_hints.t
 t/new_scope.t
 t/pod.t
+t/scope.t
 t/subclass_1.pm
 t/subclass_2.pm
 t/subclass_3.pm
@@ -22,6 +25,7 @@ t/superclass_2.pm
 t/superclass_3.pm
 t/superclass_4.pm
 t/superclass_5.pm
+t/tag.t
 t/test_1.pm
 t/test_10.pm
 t/test_11.pm

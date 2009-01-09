@@ -5,7 +5,7 @@ use warnings;
 
 use if (-d 't'), lib => 't';
 
-use Test::More tests => 1;
+use Test::More tests => 2;
 
 # Confirm that values in %^H leak across file boundaries prior to patchlevel 33311 if Devel::Pragma is not used
 
@@ -28,5 +28,18 @@ my $already_fixed;
     SKIP: {
         skip('patchlevel > 33311', 1) if ($already_fixed);
         ok (not(test_12::test()), '%^H leaks across file boundaries if Devel::Pragma is not used');
+    }
+}
+
+{
+    use Devel::Pragma qw(my_hints);
+
+    BEGIN { my_hints }
+
+    use lexical1;
+
+    SKIP: {
+        skip('patchlevel > 33311', 1) if ($already_fixed);
+        ok(lexical1::test(), "Devel::Pragma doesn't leak across file boundaries");
     }
 }
