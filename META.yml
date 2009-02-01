@@ -1,9 +1,9 @@
 --- #YAML:1.0
 name:               Devel-Pragma
-version:            0.32
+version:            0.40
 abstract:           helper functions for developers of lexical pragmas
 author:
-    - chocolateboy <chocolate.boy@email.com>
+    - chocolateboy <chocolate@cpan.org>
 license:            perl
 distribution_type:  module
 configure_requires:

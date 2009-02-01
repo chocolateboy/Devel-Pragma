@@ -1,59 +1,34 @@
-/*
-    context marshalling massively pessimizes extensions built for threaded perls e.g. Cygwin.
-
-    define PERL_CORE rather than PERL_NO_GET_CONTEXT (see perlguts) because a) PERL_GET_NO_CONTEXT still incurs the
-    overhead of an extra function call for each interpreter variable; and b) this is a drop-in replacement for a
-    core op.
-*/
-
-#define PERL_CORE
+#define PERL_NO_GET_CONTEXT
 
 #include "EXTERN.h"
 #include "perl.h"
+#define NO_XSLOCKS /* trap exceptions in mysubs_method and mysubs_method_named */
 #include "XSUB.h"
 #include "assert.h"
 
 #define NEED_sv_2pv_flags
 #include "ppport.h"
 
-#ifndef HvRITER_set
-#  define HvRITER_set(hv,r)        (HvRITER(hv) = r)
-#endif
-#ifndef HvEITER_set
-#  define HvEITER_set(hv,r)        (HvEITER(hv) = r)
-#endif
-
-#ifndef HvRITER_get
-#  define HvRITER_get HvRITER
-#endif
-#ifndef HvEITER_get
-#  define HvEITER_get HvEITER
-#endif
-
+STATIC OP * devel_pragma_require(pTHX);
 STATIC OP * (*old_require)(pTHX) = NULL;
-STATIC OP * my_require(pTHX);
-STATIC void dp_restore_hh(pTHX_ HV *const hh, HV *const temp_hh);
-STATIC void setup(pTHX);
-STATIC void teardown(pTHX);
-STATIC U32 SCOPE_DEPTH = 0;
+STATIC void devel_pragma_enter(pTHX);
+STATIC void devel_pragma_hash_copy(pTHX_ HV *const from, HV *const to);
+STATIC void devel_pragma_leave(pTHX);
+
+STATIC U32 DEVEL_PRAGMA_COMPILING = 0;
 
 /* TODO: more recent perls have a dedicated Perl_hv_copy_hints_hv in hv.c */
-STATIC void dp_restore_hh(pTHX_ HV *const hh, HV *const temp_hh) {
+STATIC void devel_pragma_hash_copy(pTHX_ HV *const from, HV *const to) {
     HE *entry;
-    const I32 riter = HvRITER_get(temp_hh);
-    HE * const eiter = HvEITER_get(temp_hh);
 
-    hv_iterinit(temp_hh);
+    hv_iterinit(from);
 
-    while ((entry = hv_iternext(temp_hh))) {
-        (void)hv_store(hh, HeKEY(entry), HeKLEN(entry), newSVsv(HeVAL(entry)), HeHASH(entry));
+    while ((entry = hv_iternext(from))) {
+        const char * key;
+        STRLEN len;
+        key = HePV(entry, len);
+        (void)hv_store(to, key, len, SvREFCNT_inc(newSVsv(HeVAL(entry))), HeHASH(entry));
     }
-
-    HvRITER_set(temp_hh, riter);
-    HvEITER_set(temp_hh, eiter);
-
-    hv_clear(temp_hh);
-    hv_undef(temp_hh);
 }
 
 /*
@@ -63,19 +38,27 @@ STATIC void dp_restore_hh(pTHX_ HV *const hh, HV *const temp_hh) {
  * we only modify %^H for code paths that use it i.e. we only modify %^H for
  * cases that reach the fix in patch #33311
  */
-OP * my_require(pTHX) {
+STATIC OP * devel_pragma_require(pTHX) {
+    /* <copypasta> */
     dSP;
     SV * sv;
-    OP * o;
+    OP * o = NULL;
     HV *hh, *temp_hh;
     const char *name;
     STRLEN len;
     char * unixname;
     STRLEN unixlen;
-    U32 compile_time = 0;
 #ifdef VMS
     int vms_unixname = 0;
 #endif
+
+    /*
+     * if this is called at runtime, then the %^H for the COPs in the required file
+     * was already cleared, so this is a no-op
+     */
+    if (!DEVEL_PRAGMA_COMPILING) { /* runtime; for some reason, IN_PERL_COMPILETIME doesn't work */
+        goto done;
+    }
 
     sv = TOPs;
 
@@ -96,6 +79,7 @@ OP * my_require(pTHX) {
     }
 
     name = SvPV_const(sv, len);
+
     if (!(name && (len > 0) && *name)) {
         goto done;
     }
@@ -134,85 +118,80 @@ OP * my_require(pTHX) {
             }
         }
     }
+    /* </copypasta> */
 
     /* 
      * after much trial and error, it turns out the most reliable and least obtrusive way to
      * prevent %^H leaking across require() is to hv_clear it before the call and to restore its values
      * (taking care to preserve any magic) afterwards
      */
-    hh = GvHV(PL_hintgv);
-#ifdef hv_copy_hints_hv
-    temp_hh = hv_copy_hints_hv(aTHX_ hh);
-#else
-#ifdef Perl_hv_copy_hints_hv
-    temp_hh = Perl_hv_copy_hints_hv(aTHX_ hh);
-#else
-#ifdef newHVhv
-    temp_hh = newHVhv(hh);
-#else
-    temp_hh = Perl_newHVhv(aTHX_ hh);
-#endif
-#endif
-#endif
-        
+
+    hh = GvHV(PL_hintgv); /* %^H */
+    temp_hh = newHVhv(hh); /* copy %^H */
     hv_clear(hh); /* clear %^H */
 
-    /*
-     * SCOPE_DEPTH will always be > 0 at compile-time, otherwise we wouldn't be here;
-     * however, it will be 0 at run time. And, in fact, that's a good way to distinguish
-     * between the two
-     */
+    /* this module is itself lexically-scoped, and therefore is disabled across file boundaries */
+    devel_pragma_leave(aTHX);
 
-    if (SCOPE_DEPTH > 0) { /* compile-time */
-        compile_time = 1;
-        assert(SCOPE_DEPTH == 1);
-        teardown(aTHX); /* this module is itself lexically-scoped, and therefore is disabled across file boundaries */
-        assert(SCOPE_DEPTH == 0);
+    {
+        dXCPT; /* set up variables for try/catch */
+
+        XCPT_TRY_START {
+            o = CALL_FPTR(old_require)(aTHX);
+        } XCPT_TRY_END
+
+        XCPT_CATCH {
+            devel_pragma_enter(aTHX); /* re-enable once the file has been compiled */
+            devel_pragma_hash_copy(aTHX_ temp_hh, hh); /* restore %^H's values from the backup */
+
+            hv_clear(temp_hh);
+            hv_undef(temp_hh);
+
+            XCPT_RETHROW;
+        }
     }
 
-    o = CALL_FPTR(old_require)(aTHX);
+    assert(DEVEL_PRAGMA_COMPILING == 0);
+    devel_pragma_enter(aTHX); /* re-enable once the file has been compiled */
+    assert(DEVEL_PRAGMA_COMPILING == 1);
 
-    if (compile_time) {
-        assert(SCOPE_DEPTH == 0);
-        setup(aTHX); /* re-enable once the file has been compiled */
-        assert(SCOPE_DEPTH == 1);
-    }
+    devel_pragma_hash_copy(aTHX_ temp_hh, hh); /* restore %^H's values from the backup */
 
-    dp_restore_hh(aTHX_ hh, temp_hh); /* restore %^H's values from the backup */
+    hv_clear(temp_hh);
+    hv_undef(temp_hh);
 
     return o;
 
     done:
-    return CALL_FPTR(old_require)(aTHX);
+        return CALL_FPTR(old_require)(aTHX);
 }
 
-STATIC void teardown(pTHX) {
-    if (SCOPE_DEPTH == 0) {
-        Perl_warn(aTHX_ "Devel::Pragma: scope underflow");
-    }
-
-    if (SCOPE_DEPTH > 1) {
-        --SCOPE_DEPTH;
+STATIC void devel_pragma_leave(pTHX) {
+    if (DEVEL_PRAGMA_COMPILING != 1) {
+        croak("Devel::Pragma: scope underflow");
     } else {
-        SCOPE_DEPTH = 0;
+        assert(old_require);
+        assert(old_require != devel_pragma_require);
+        assert(PL_ppaddr[OP_REQUIRE] == devel_pragma_require);
+
         PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = old_require;
+        DEVEL_PRAGMA_COMPILING = 0;
     }
 }
 
-STATIC void setup(pTHX) {
-    if (SCOPE_DEPTH > 0) {
-        ++SCOPE_DEPTH;
+STATIC void devel_pragma_enter(pTHX) {
+    if (DEVEL_PRAGMA_COMPILING != 0) {
+        croak("Devel::Pragma: scope overflow");
     } else {
-        SCOPE_DEPTH = 1;
         /*
          * capture the function in scope when this is called.
          * usually, this will be Perl_pp_require, though, in principle,
          * it could be a bespoke function spliced in by another module.
          */
-        if (PL_ppaddr[OP_REQUIRE] != my_require) {
-            old_require = PL_ppaddr[OP_REQUIRE];
-            PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = my_require;
-        }
+        old_require = PL_ppaddr[OP_REQUIRE];
+        assert(old_require != devel_pragma_require);
+        PL_ppaddr[OP_REQUIRE] = PL_ppaddr[OP_DOFILE] = devel_pragma_require;
+        DEVEL_PRAGMA_COMPILING = 1;
     }
 }
 
@@ -227,19 +206,19 @@ ccstash()
         RETVAL
 
 void
-_scope()
+xs_scope()
     PROTOTYPE:
     CODE:
         XSRETURN_UV(PTR2UV(GvHV(PL_hintgv)));
 
 void
-_enter()
+xs_enter()
     PROTOTYPE:
     CODE:
-        setup(aTHX);
+        devel_pragma_enter(aTHX);
 
 void
-_leave()
+xs_leave()
     PROTOTYPE:
     CODE:
-        teardown(aTHX);
+        devel_pragma_leave(aTHX);

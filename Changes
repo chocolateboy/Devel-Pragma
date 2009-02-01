@@ -1,5 +1,12 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.40  Sun Feb 1 19:36:21 2009
+    - portability fixes
+    - added new function: fqname
+        - added fqname.t
+    - made require hook exception-safe (Marcus Holland-Moritz++)
+        - added exception.t
+
 0.32  Fri Jan 9 15:26:21 2009
     - added scope() - unique identifier for the currently-compiling scope
         - added scope.t

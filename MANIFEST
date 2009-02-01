@@ -8,6 +8,8 @@ Pragma.xs
 README
 t/01_use.t
 t/ccstash.t
+t/exception.t
+t/fqname.t
 t/leak.t
 t/lexical1.pm
 t/lexical2.pm

@@ -5,7 +5,7 @@ use 5.008;
 use strict;
 use warnings;
 
-our $VERSION = '0.32';
+our $VERSION = '0.40';
 
 use XSLoader;
 use B::Hooks::EndOfScope;
@@ -13,7 +13,7 @@ use Carp qw(carp);
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(my_hints new_scope ccstash scope);
+our @EXPORT_OK = qw(my_hints new_scope ccstash scope fqname);
 our %EXPORT_TAGS = (all => [ @EXPORT_OK ]);
 
 XSLoader::load(__PACKAGE__, $VERSION);
@@ -25,14 +25,14 @@ sub my_hints() {
 
     unless ($hints->{'Devel::Pragma'}) {
         $hints->{'Devel::Pragma'} = 1;
-        _enter();
-        on_scope_end \&_leave;
+        xs_enter();
+        on_scope_end \&xs_leave;
     }
 
     return $hints;
 }
 
-sub _check_hints() {
+sub check_hints() {
     unless ($^H & 0x20000) {
         carp('Devel::Pragma: unexpected $^H (HINT_LOCALIZE_HH bit not set) - setting it now, but results may be unreliable');
     }
@@ -40,14 +40,14 @@ sub _check_hints() {
 }
 
 sub scope() {
-    _check_hints;
-    _scope();
+    check_hints;
+    xs_scope();
 }
 
 sub new_scope(;$) {
     my $caller = shift || caller;
 
-    _check_hints;
+    check_hints;
 
     my $hints = my_hints();
 
@@ -78,6 +78,22 @@ sub new_scope(;$) {
     return $new_scope;
 }
 
+sub fqname ($;$) {
+    my $name = shift;
+    my ($package, $subname);
+
+    $name =~ s{'}{::}g;
+
+    if ($name =~ /::/) {
+        ($package, $subname) = $name =~ m{^(.+)::(\w+)$};
+    } else {
+        my $caller = @_ ? shift : ccstash();
+        ($package, $subname) = ($caller, $name);
+    }
+
+    return wantarray ? ($package, $subname) : "$package\::$subname";
+}
+
 sub import {
     my $class = shift;
     $^H |= 0x20000; # set HINT_LOCALIZE_HH (0x20000)
@@ -96,7 +112,7 @@ Devel::Pragma - helper functions for developers of lexical pragmas
 
   package MyPragma;
 
-  use Devel::Pragma qw(my_hints ccstash new_scope);
+  use Devel::Pragma qw(:all);
 
   sub import {
       my ($class, %options) = @_;
@@ -173,7 +189,7 @@ C<use Devel::Pragma> or C<my_hints>.
 =head2 ccstash
 
 This returns the name of the currently-compiling stash. It can be used as a replacement for the scalar form of
-C<caller> to provide the name of the package in which C<use MyPragma> is called. Unlike C<caller> it
+C<caller> to provide the name of the package in which C<use MyPragma> is called. Unlike C<caller>, it
 returns the same value regardless of the number of intervening calls before C<MyPragma::import>
 is reached.
 
@@ -212,9 +228,58 @@ and a script that uses the subclass:
 - the C<ccstash> call in C<MySuperPragma::import> returns the name of the package that's being compiled when
 the call to C<MySuperPragma::import> (via C<MySubPragma::import>) takes place i.e. C<main> in this case.
 
+=head2 fqname
+
+Given a subroutine name, usually supplied by the caller of the pragma's import method, this function returns
+the name in package-qualified form. In addition, old-style C<'> separators are converted to new-style C<::>.
+
+If the name contains no separators, then the optional calling package is prepended. If not supplied, the caller
+defaults to the value returned by L<"ccstash">. If the name is already package-qualified,
+then it is returned unchanged.
+
+In list context, C<fqname> returns the package and unqualified subroutine name (e.g. 'main' and 'foo'), and in scalar
+context it returns the package and sub name joined by '::' (e.g. 'main::foo').
+
+e.g.
+
+    package MyPragma;
+
+    sub import {
+        my ($class, @names) = @_;
+
+        for my $name (@names) {
+            my $fqname = fqname($name);
+            say $fqname;
+        }
+    }
+
+    package MySubPragma;
+
+    use base qw(MyPragma);
+
+    sub import { shift->SUPER::import(@_) }
+
+    #!/usr/bin/env perl
+
+    use MyPragma qw(foo Foo::Bar::baz Foo'Bar'baz Foo'Bar::baz);
+
+    {
+        package Some::Other::Package;
+
+        use MySubPragma qw(quux);
+    }
+
+prints:
+
+    main::foo
+    Foo::Bar::baz
+    Foo::Bar::baz
+    Foo::Bar::baz
+    Some::Other::Package::quux
+
 =head1 VERSION
 
-0.32
+0.40
 
 =head1 SEE ALSO
 
@@ -236,7 +301,7 @@ the call to C<MySuperPragma::import> (via C<MySubPragma::import>) takes place i.
 
 =head1 AUTHOR
 
-chocolateboy <chocolate.boy@email.com>
+chocolateboy <chocolate@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 

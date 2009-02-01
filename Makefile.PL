@@ -20,7 +20,7 @@ WriteMakefile(
         'B::Hooks::EndOfScope' => '0.05',
     },
     ABSTRACT_FROM => 'lib/Devel/Pragma.pm',
-    AUTHOR        => 'chocolateboy <chocolate.boy@email.com>',
+    AUTHOR        => 'chocolateboy <chocolate@cpan.org>',
     LIBS          => [''],
     DEFINE        => '',
     INC           => '-I.',

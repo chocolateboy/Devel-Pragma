@@ -11,6 +11,7 @@ use Test::More tests => 2;
 
 # we can't assume brokenness as the tests may be
 # run against bleadperls with change #33311 applied
+
 my $already_fixed;
 
 {
@@ -40,6 +41,6 @@ my $already_fixed;
 
     SKIP: {
         skip('patchlevel > 33311', 1) if ($already_fixed);
-        ok(lexical1::test(), "Devel::Pragma doesn't leak across file boundaries");
+        ok(lexical2::test(), "Devel::Pragma doesn't leak across file boundaries");
     }
 }
