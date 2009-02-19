@@ -5,7 +5,7 @@ use 5.008;
 use strict;
 use warnings;
 
-our $VERSION = '0.51';
+our $VERSION = '0.52';
 
 use B::Hooks::EndOfScope;
 use B::Hooks::OP::Annotation;
@@ -404,7 +404,7 @@ before that exception is thrown.
 
 =head1 VERSION
 
-0.51
+0.52
 
 =head1 SEE ALSO
 

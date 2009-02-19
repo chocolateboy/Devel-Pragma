@@ -38,6 +38,7 @@ WriteMakefile(
     DEFINE        => '',
     INC           => '-I.',
     OPTIMIZE      => $optimize,
+    META_MERGE    => { configure_requires => { 'ExtUtils::Depends' => '0.301' } },
     ($ExtUtils::MakeMaker::VERSION >= 6.31 ? (LICENSE => 'perl') : ()),
     %XS_DEPENDENCIES
 );
