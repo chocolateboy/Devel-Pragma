@@ -5,7 +5,7 @@ use 5.008;
 use strict;
 use warnings;
 
-our $VERSION = '0.50';
+our $VERSION = '0.51';
 
 use B::Hooks::EndOfScope;
 use B::Hooks::OP::Annotation;
@@ -198,7 +198,9 @@ Devel::Pragma - helper functions for developers of lexical pragmas
 
       unless ($hints->{MyPragma}) { # top-level
            $hints->{MyPragma} = 1;
-           on_require \&leave, \&enter; # disable/enable this pragma before/after compile-time requires
+
+           # disable/enable this pragma before/after compile-time requires
+           on_require \&leave, \&enter;
       }
 
       if (new_scope($class)) {
@@ -402,7 +404,7 @@ before that exception is thrown.
 
 =head1 VERSION
 
-0.50
+0.51
 
 =head1 SEE ALSO
 

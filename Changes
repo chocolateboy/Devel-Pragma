@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.51  Thu Feb 19 16:38:56 2009
+    - fix META.yml
+
 0.50  Thu Feb 19 03:56:55 2009
     - added on_require
         - added require.t
