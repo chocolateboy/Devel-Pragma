@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Devel-Pragma
-version:            0.40
+version:            0.50
 abstract:           helper functions for developers of lexical pragmas
 author:
     - chocolateboy <chocolate@cpan.org>
@@ -9,7 +9,9 @@ distribution_type:  module
 configure_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    B::Hooks::EndOfScope:  0.05
+    B::Hooks::EndOfScope:  0.06
+    B::Hooks::OP::Annotation:  0.31
+    B::Hooks::OP::Check:  0.15
 no_index:
     directory:
         - t

@@ -16,6 +16,14 @@ t/lexical2.pm
 t/my_hints.t
 t/new_scope.t
 t/pod.t
+t/require.t
+t/require_1.pm
+t/require_2.pm
+t/require_3.pm
+t/require_4.pm
+t/require_5.pm
+t/require_6.pm
+t/require_7.pm
 t/scope.t
 t/subclass_1.pm
 t/subclass_2.pm

@@ -703,7 +703,8 @@ POPs|||n
 PTR2IV|5.006000||p
 PTR2NV|5.006000||p
 PTR2UV|5.006000||p
-PTR2ul|5.007001||p
+PTR2nat|5.008008||p
+PTR2ul|5.006001||p
 PTRV|5.006000||p
 PUSHMARK|||
 PUSH_MULTICALL||5.011000|
@@ -3750,13 +3751,20 @@ typedef NVTYPE NV;
 #  define PTR2UV(p)       INT2PTR(UV,p)
 #  define PTR2NV(p)       NUM2PTR(NV,p)
 
+#endif /* !INT2PTR */
+
+/* don't include this under #ifndef INT2PTR - INT2PTR is defined from 5.6.0, while PTR2ul is defined from 5.6.1 */
+#ifndef PTR2ul
 #  if PTRSIZE == LONGSIZE
 #    define PTR2ul(p)     (unsigned long)(p)
 #  else
 #    define PTR2ul(p)     INT2PTR(unsigned long,p)
 #  endif
+#endif
 
-#endif /* !INT2PTR */
+#ifndef PTR2nat                     /* introduced in 5.8.8 */
+#  define PTR2nat(p)      (PTRV)(p) /* pointer to (unsigned) integer of PTRSIZE */
+#endif
 
 #undef START_EXTERN_C
 #undef END_EXTERN_C

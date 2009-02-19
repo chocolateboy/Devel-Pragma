@@ -5,19 +5,25 @@ use 5.008;
 use strict;
 use warnings;
 
-our $VERSION = '0.40';
+our $VERSION = '0.50';
 
-use XSLoader;
 use B::Hooks::EndOfScope;
-use Carp qw(carp);
+use B::Hooks::OP::Annotation;
+use B::Hooks::OP::Check;
+use Carp qw(carp croak);
+use Scalar::Util;
+use XSLoader;
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(my_hints new_scope ccstash scope fqname);
+our @EXPORT_OK = qw(my_hints new_scope ccstash scope fqname on_require);
 our %EXPORT_TAGS = (all => [ @EXPORT_OK ]);
+
+my $REQUIRE_KEY = 0;
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
+# return a reference to the hints hash
 sub my_hints() {
     # set HINT_LOCALIZE_HH (0x20000)
     $^H |= 0x20000;
@@ -32,6 +38,7 @@ sub my_hints() {
     return $hints;
 }
 
+# make sure the "enable lexically-scoped %^H" flag is set (on by default in 5.10)
 sub check_hints() {
     unless ($^H & 0x20000) {
         carp('Devel::Pragma: unexpected $^H (HINT_LOCALIZE_HH bit not set) - setting it now, but results may be unreliable');
@@ -39,11 +46,13 @@ sub check_hints() {
     return my_hints; # create it if it doesn't exist - in some perls, it starts out NULL
 }
 
+# return a unique integer ID for the current scope
 sub scope() {
     check_hints;
     xs_scope();
 }
 
+# return a boolean indicating whether this is the first time "use MyPragma" has been called in this scope
 sub new_scope(;$) {
     my $caller = shift || caller;
 
@@ -64,7 +73,7 @@ sub new_scope(;$) {
     # a nested or outer scope that didn't previously "use MyPragma"
 
     my $current_scope = scope();
-    my $id = "Devel::Pragma::Scope::$caller";
+    my $id = "Devel::Pragma::Scope($caller)";
     my $old_scope = exists($hints->{$id}) ? $hints->{$id} : 0;
     my $new_scope; # is this a scope in which new_scope has not previously been called?
 
@@ -78,6 +87,10 @@ sub new_scope(;$) {
     return $new_scope;
 }
 
+# given a short name (e.g. "foo"), expand it into a fully-qualified name with the caller's package prefixed
+# e.g. "main::foo"
+#
+# if the name is already fully-qualified, return it unchanged
 sub fqname ($;$) {
     my $name = shift;
     my ($package, $subname);
@@ -94,6 +107,70 @@ sub fqname ($;$) {
     return wantarray ? ($package, $subname) : "$package\::$subname";
 }
 
+# helper function: return true if $ref ISA $class - works with non-references, unblessed references and objects
+sub _isa($$) {
+    my ($ref, $class) = @_;
+    return Scalar::Util::blessed($ref) ? $ref->isa($class) : ref($ref) eq $class;
+}
+
+# run registered callbacks before performing a compile-time require or do FILE
+sub _pre_require($) {
+    _callback(0, shift);
+}
+
+# run registered callbacks after performing a compile-time require or do FILE
+sub _post_require($) {
+    local $@; # if there was an exception on require, make sure we don't clobber it 
+    _callback(1, shift)
+}
+
+# common code for pre- and post-require hooks
+sub _callback($) {
+    my ($index, $hints) = @_;
+
+    if (my $hooks = $hints->{'Devel::Pragma(Hooks)'}) {
+        for my $key (sort(keys(%$hooks))) {
+            eval { $hooks->{$key}->[$index]->($hints) };
+
+            if ($@) {
+                my $stage = $index == 0 ? 'pre' : 'post';
+                carp __PACKAGE__ . ": exception in $stage-require callback: $@";
+            }
+        }
+    }
+}
+
+# register pre- and/or post-require hooks
+# these are only called if the require occurs at compile-time
+sub on_require($$) {
+    my $hints = my_hints();
+
+    for my $index (0 .. 1) {
+        my $arg = $_[$index];
+        my $ref = defined($arg) ? ref($arg) : '<undef>';
+
+        croak(sprintf('%s: invalid arg %d; expected CODE, got %s', __PACKAGE__, $index + 1, $ref))
+            unless ($arg and _isa($arg, 'CODE'));
+    }
+
+    $hints->{'Devel::Pragma(Hooks)'}->{++$REQUIRE_KEY} = [ @_ ];
+
+    # return $REQUIRE_KEY;
+    return;
+}
+
+# sub on_require_remove($) {
+#     my $index = shift;
+#     my $hints = my_hints();
+#     my $hooks = $hints->{'Devel::Pragma(Hooks)'};
+# 
+#     croak(sprintf('%s: attempt to remove a non-existent require hook', __PACKAGE__))
+#         unless ($hooks->{$index});
+# 
+#     delete $hooks->{$index};
+# }
+
+# make sure "enable lexically-scoped %^H" is set in older perls, and export the requested functions
 sub import {
     my $class = shift;
     $^H |= 0x20000; # set HINT_LOCALIZE_HH (0x20000)
@@ -119,7 +196,10 @@ Devel::Pragma - helper functions for developers of lexical pragmas
       my $hints = my_hints;   # lexically-scoped %^H
       my $caller = ccstash(); # currently-compiling stash
 
-      $hints->{MyPragma} = 1;
+      unless ($hints->{MyPragma}) { # top-level
+           $hints->{MyPragma} = 1;
+           on_require \&leave, \&enter; # disable/enable this pragma before/after compile-time requires
+      }
 
       if (new_scope($class)) {
           ...
@@ -131,12 +211,12 @@ Devel::Pragma - helper functions for developers of lexical pragmas
 =head1 DESCRIPTION
 
 This module provides helper functions for developers of lexical pragmas. These can be used both in older versions of
-perl (from 5.8.0), which have limited support for lexical pragmas, and in the most recent versions, which have improved
+perl (from 5.8.1), which have limited support for lexical pragmas, and in the most recent versions, which have improved
 support.
 
 =head1 EXPORTS
 
-Devel::Pragma exports the following functions on demand. They can all be imported at once by using the C<:all> tag. e.g.
+C<Devel::Pragma> exports the following functions on demand. They can all be imported at once by using the C<:all> tag. e.g.
 
     use Devel::Pragma qw(:all);
 
@@ -183,7 +263,7 @@ This returns an integer that uniquely identifies the currently-compiling scope. 
 distinguish or compare scopes.
 
 A warning is issued if C<scope> (or C<new_scope>) is called in a context in which it doesn't make sense i.e. if the
-scoped behaviour of %^H has not been enabled - either by explcitly modifying $^H, or by calling
+scoped behaviour of C<%^H> has not been enabled - either by explicitly modifying C<$^H>, or by calling
 C<use Devel::Pragma> or C<my_hints>.
 
 =head2 ccstash
@@ -277,9 +357,52 @@ prints:
     Foo::Bar::baz
     Some::Other::Package::quux
 
+=head2 on_require
+
+This function allows pragmas to register pre- and post-C<require> (and C<do FILE>) callbacks.
+These are called whenever C<require> or C<do FILE> OPs are executed at compile-time,
+typically via C<use> statements.
+
+C<on_require> takes two callbacks (i.e. anonymous subs or sub references), each of which is called
+with a reference to C<%^H>. The first callback is called before C<require>, and the second is called
+after C<require> has loaded and compiled its file. (If the file has already been loaded,
+or the required value is a vstring rather than a file, then both the callbacks and the
+clearance/restoration of C<%^H> are skipped.)
+
+Multiple callbacks can be registered in a given scope, and they are called in the order in which they
+are registered. Callbacks are unregistered automatically at the end of the (compilation of) the scope
+in which they are registered.
+
+C<on_require> callbacks can be used to disable/re-enable OP check hooks installed via
+L<B::Hooks::OP::Check|B::Hooks::OP::Check> i.e. they can be used to make check hooks
+lexically-scoped.
+
+    package MyPragma;
+
+    use Devel::Pragma qw(:all);
+
+    sub import {
+        my ($class, %args) = @_;
+        my $hints = my_hints;
+
+        unless ($hints->{MyPragma}) { # top-level
+            $hints->{MyPragma} = 1;
+            on_scope_end \&teardown;
+            on_require \&teardown, \&setup;
+            setup;
+        }
+    }
+
+C<on_require> callbacks can also be used to rollback/restore lexical side-effects i.e. lexical features
+whose scope extends beyond C<%^H> (like L<"my_hints">, C<on_require> implicitly renders C<%^H> lexically-scoped).
+
+Fatal exceptions raised in C<on_require> callbacks are trapped and reported as warnings. If a fatal
+exception is raised in the C<require> or C<do FILE> call, the post-C<require> callbacks are invoked
+before that exception is thrown.
+
 =head1 VERSION
 
-0.40
+0.50
 
 =head1 SEE ALSO
 
@@ -292,6 +415,12 @@ prints:
 =item * L<perlvar|perlvar>
 
 =item * L<B::Hooks::EndOfScope|B::Hooks::EndOfScope>
+
+=item * L<B::Hooks::OP::Check|B::Hooks::OP::Check>
+
+=item * L<B::Hooks::OP::PPAddr|B::Hooks::OP::PPAddr>
+
+=item * L<B::Hooks::OP::Annotation|B::Hooks::OP::Annotation>
 
 =item * L<Devel::Hints|Devel::Hints>
 
