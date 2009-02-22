@@ -13,11 +13,11 @@
 
 #define DEVEL_PRAGMA_KEY "Devel::Pragma"
 
-#define DEVEL_PRAGMA_ENABLED(table, svp)                                            \
-    ((PL_hints & 0x20000) &&                                                        \
-    (table = GvHV(PL_hintgv)) &&                                                    \
-    (svp = hv_fetch(table, DEVEL_PRAGMA_KEY, strlen(DEVEL_PRAGMA_KEY), FALSE)) &&   \
-    *svp &&                                                                         \
+#define DEVEL_PRAGMA_ENABLED(table, svp)                                               \
+    ((PL_hints & 0x20000) &&                                                           \
+    (table = GvHV(PL_hintgv)) &&                                                       \
+    (svp = hv_fetch(table, DEVEL_PRAGMA_KEY, sizeof(DEVEL_PRAGMA_KEY) - 1, FALSE)) &&  \
+    *svp &&                                                                            \
     SvOK(*svp))
 
 STATIC OP * devel_pragma_check_require(pTHX_ OP * o, void *user_data);

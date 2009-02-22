@@ -4,41 +4,51 @@ use strict;
 use warnings;
 
 use ExtUtils::MakeMaker;
-use ExtUtils::Depends 0.301;
+use ExtUtils::Depends;
 use Config;
 
-my $optimize;
+our $OPTIMIZE;
 
 if ($Config{gccversion}) {
-    $optimize = '-O3 -Wall -Wextra';
-    $optimize .= ' -g' if (-d '.svn');
+    $OPTIMIZE = '-O3 -Wall -Wextra -Wdeclaration-after-statement';
+    $OPTIMIZE .= ' -g' if (-d '.svn');
 } elsif ($Config{osname} eq 'MSWin32') {
-    $optimize = '-O2 -W4';
+    $OPTIMIZE = '-O2 -W4';
 } else {
-    $optimize = $Config{optimize};
+    $OPTIMIZE = $Config{optimize};
 }
+
+our %XS_PREREQUISITES = (
+    'B::Hooks::OP::Annotation' => '0.32',
+    'B::Hooks::OP::Check'      => '0.15',
+);
 
 our %XS_DEPENDENCIES = ExtUtils::Depends->new(
     'Devel::Pragma',
-    'B::Hooks::OP::Annotation',
-    'B::Hooks::OP::Check',
-)->get_makefile_vars(),
+    keys(%XS_PREREQUISITES),
+)->get_makefile_vars();
 
 WriteMakefile(
     NAME          => 'Devel::Pragma',
     VERSION_FROM  => 'lib/Devel/Pragma.pm',
     PREREQ_PM     => {
-        'B::Hooks::EndOfScope'     => '0.06',
-        'B::Hooks::OP::Annotation' => '0.31',
-        'B::Hooks::OP::Check'      => '0.15',
+        'B::Hooks::EndOfScope' => '0.07',
+        %XS_PREREQUISITES
     },
     ABSTRACT_FROM => 'lib/Devel/Pragma.pm',
     AUTHOR        => 'chocolateboy <chocolate@cpan.org>',
     LIBS          => [''],
     DEFINE        => '',
     INC           => '-I.',
-    OPTIMIZE      => $optimize,
-    META_MERGE    => { configure_requires => { 'ExtUtils::Depends' => '0.301' } },
+    OPTIMIZE      => $OPTIMIZE,
     ($ExtUtils::MakeMaker::VERSION >= 6.31 ? (LICENSE => 'perl') : ()),
-    %XS_DEPENDENCIES
+    ($ExtUtils::MakeMaker::VERSION >= 6.46 ?
+        (META_MERGE => {
+            configure_requires => {
+                'ExtUtils::Depends' => '0.301',
+                %XS_PREREQUISITES
+            }})
+        : ()
+    ),
+    %XS_DEPENDENCIES,
 );

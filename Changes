@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.53  Sun Feb 22 01:44:51 GMT 2009
+    - yet another metadata fix
+
 0.52  Thu Feb 19 19:47:20 2009
     - refix META.yml
 

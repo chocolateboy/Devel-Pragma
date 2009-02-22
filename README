@@ -1,4 +1,4 @@
-Devel::Pragma version 0.52
+Devel::Pragma version 0.53
 ================================
 
 This module provides helper functions for developers of lexical pragmas. These can be used both in older versions of
