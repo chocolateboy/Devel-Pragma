@@ -11,7 +11,7 @@ our $OPTIMIZE;
 
 if ($Config{gccversion}) {
     $OPTIMIZE = '-O3 -Wall';
-    $OPTIMIZE .= ' -g -Wextra -Wdeclaration-after-statement' if (-d '.git');
+    $OPTIMIZE .= ' -g -Wextra -Wdeclaration-after-statement' if (-d 'dev');
 } elsif ($Config{osname} eq 'MSWin32') {
     $OPTIMIZE = '-O2 -W4';
 } else {
