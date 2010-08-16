@@ -10,8 +10,8 @@ use Config;
 our $OPTIMIZE;
 
 if ($Config{gccversion}) {
-    $OPTIMIZE = '-O3 -Wall -Wextra -Wdeclaration-after-statement';
-    $OPTIMIZE .= ' -g' if (-d '.svn');
+    $OPTIMIZE = '-O3 -Wall';
+    $OPTIMIZE .= ' -g -Wextra -Wdeclaration-after-statement' if (-d '.git');
 } elsif ($Config{osname} eq 'MSWin32') {
     $OPTIMIZE = '-O2 -W4';
 } else {

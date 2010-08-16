@@ -55,10 +55,7 @@ sub scope() {
 # return a boolean indicating whether this is the first time "use MyPragma" has been called in this scope
 sub new_scope(;$) {
     my $caller = shift || caller;
-
-    check_hints;
-
-    my $hints = my_hints();
+    my $hints = check_hints();
 
     # this is %^H as an integer - it changes as scopes are entered/exited i.e. it's a unique
     # identifier for the currently-compiling scope (the scope in which new_scope 
@@ -200,7 +197,7 @@ Devel::Pragma - helper functions for developers of lexical pragmas
            $hints->{MyPragma} = 1;
 
            # disable/enable this pragma before/after compile-time requires
-           on_require \&leave, \&enter;
+           on_require \&teardown, \&setup;
       }
 
       if (new_scope($class)) {
@@ -266,7 +263,7 @@ distinguish or compare scopes.
 
 A warning is issued if C<scope> (or C<new_scope>) is called in a context in which it doesn't make sense i.e. if the
 scoped behaviour of C<%^H> has not been enabled - either by explicitly modifying C<$^H>, or by calling
-C<use Devel::Pragma> or C<my_hints>.
+L<"my_hints"> or L<"on_require">.
 
 =head2 ccstash
 
@@ -367,9 +364,9 @@ typically via C<use> statements.
 
 C<on_require> takes two callbacks (i.e. anonymous subs or sub references), each of which is called
 with a reference to C<%^H>. The first callback is called before C<require>, and the second is called
-after C<require> has loaded and compiled its file. (If the file has already been loaded,
-or the required value is a vstring rather than a file, then both the callbacks and the
-clearance/restoration of C<%^H> are skipped.)
+after C<require> has loaded and compiled its file. %^H is cleared before C<require> and restored
+afterwards. (If the file has already been loaded, or the required value is a vstring rather than
+a file name, then both the callbacks and the clearance/restoration of C<%^H> are skipped.)
 
 Multiple callbacks can be registered in a given scope, and they are called in the order in which they
 are registered. Callbacks are unregistered automatically at the end of the (compilation of) the scope
@@ -396,7 +393,7 @@ lexically-scoped.
     }
 
 C<on_require> callbacks can also be used to rollback/restore lexical side-effects i.e. lexical features
-whose scope extends beyond C<%^H> (like L<"my_hints">, C<on_require> implicitly renders C<%^H> lexically-scoped).
+whose side-effects extend beyond C<%^H> (like L<"my_hints">, C<on_require> implicitly renders C<%^H> lexically-scoped).
 
 Fatal exceptions raised in C<on_require> callbacks are trapped and reported as warnings. If a fatal
 exception is raised in the C<require> or C<do FILE> call, the post-C<require> callbacks are invoked

@@ -129,11 +129,13 @@ STATIC OP * devel_pragma_require(pTHX) {
     /* </copypasta> */
 
     OP * o = NULL;
-    /* used as a boolean to determine whether any require callbacks are registered */;
-    SV ** callbacks = NULL;
+    /* used as a boolean to determine whether any require callbacks are registered */
+    SV ** callbacks;
+    
     OPAnnotation *annotation = op_annotation_get(DEVEL_PRAGMA_ANNOTATIONS, PL_op);
 
-    /* <copypasta> */
+    callbacks = NULL;
+
     /*
      * if this is called at runtime, then the %^H for the COPs in the required file
      * was already cleared, so this is a no-op
@@ -142,6 +144,7 @@ STATIC OP * devel_pragma_require(pTHX) {
         goto done;
     }
 
+    /* <copypasta> */
     sv = TOPs;
 
     if (PL_op->op_type != OP_DOFILE) { 
@@ -221,9 +224,22 @@ STATIC OP * devel_pragma_require(pTHX) {
     /*
      * this module is itself lexically-scoped, and therefore is disabled across file boundaries
      * we could eat our own dog food and do this in perl via on_require, but that's an unnecessary
-     * slow down if no other callbacks are registered
+     * pessimization if no other callbacks are registered
      * */
     devel_pragma_leave(aTHX);
+
+    /*
+     * FIXME
+     *
+     * the pre-require hook receives a copy of %^H; if the callback manipulates the copy,
+     * the changes are merged back into %^H
+     *
+     * currently, the post-require hook receives a copy that isn't merged back i.e. it's passed the copy
+     * *after* the merge
+     *
+     * either a) document this, b) pass the post-require hook the restored %^H, or c) pass it
+     * the copy *before* merging it back into %^H
+     */
 
     {
         dXCPT; /* set up variables for try/catch */
