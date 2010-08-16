@@ -5,7 +5,7 @@ use 5.008;
 use strict;
 use warnings;
 
-our $VERSION = '0.53';
+our $VERSION = '0.54';
 
 use B::Hooks::EndOfScope;
 use B::Hooks::OP::Annotation;
@@ -401,7 +401,7 @@ before that exception is thrown.
 
 =head1 VERSION
 
-0.53
+0.54
 
 =head1 SEE ALSO
 
@@ -423,6 +423,8 @@ before that exception is thrown.
 
 =item * L<Devel::Hints|Devel::Hints>
 
+=item * L<Lexical::SealRequireHints|Lexical::SealRequireHints>
+
 =item * http://tinyurl.com/45pwzo
 
 =back
@@ -433,10 +435,10 @@ chocolateboy <chocolate@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2008-2009 by chocolateboy
+Copyright (C) 2008-2010 by chocolateboy
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.8 or,
+it under the same terms as Perl itself, either Perl version 5.8.1 or,
 at your option, any later version of Perl 5 you may have available.
 
 =cut

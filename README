@@ -1,8 +1,8 @@
-Devel::Pragma version 0.53
+Devel::Pragma version 0.54
 ================================
 
 This module provides helper functions for developers of lexical pragmas. These can be used both in older versions of
-perl (from 5.8.0), which have limited support for lexical pragmas, and in the most recent versions, which have improved
+perl (from 5.8.1), which have limited support for lexical pragmas, and in the most recent versions, which have improved
 support.
 
 INSTALLATION
@@ -19,11 +19,15 @@ DEPENDENCIES
 This module requires these other modules and libraries:
 
     B::Hooks::EndOfScope
+    B::Hooks::OP::Annotation
+    B::Hooks::OP::Check
+    ExtUtils::Depends
+
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2008-2009 by chocolateboy
+Copyright (C) 2008-2010 by chocolateboy
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.8 or,
+it under the same terms as Perl itself, either Perl version 5.8.1 or,
 at your option, any later version of Perl 5 you may have available.

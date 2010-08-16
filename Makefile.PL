@@ -19,8 +19,8 @@ if ($Config{gccversion}) {
 }
 
 our %XS_PREREQUISITES = (
-    'B::Hooks::OP::Annotation' => '0.32',
-    'B::Hooks::OP::Check'      => '0.15',
+    'B::Hooks::OP::Annotation' => '0.43',
+    'B::Hooks::OP::Check'      => '0.18',
 );
 
 our %XS_DEPENDENCIES = ExtUtils::Depends->new(
@@ -32,7 +32,7 @@ WriteMakefile(
     NAME          => 'Devel::Pragma',
     VERSION_FROM  => 'lib/Devel/Pragma.pm',
     PREREQ_PM     => {
-        'B::Hooks::EndOfScope' => '0.07',
+        'B::Hooks::EndOfScope' => '0.09',
         %XS_PREREQUISITES
     },
     ABSTRACT_FROM => 'lib/Devel/Pragma.pm',
@@ -45,7 +45,7 @@ WriteMakefile(
     ($ExtUtils::MakeMaker::VERSION >= 6.46 ?
         (META_MERGE => {
             configure_requires => {
-                'ExtUtils::Depends' => '0.301',
+                'ExtUtils::Depends' => '0.302',
                 %XS_PREREQUISITES
             }})
         : ()
