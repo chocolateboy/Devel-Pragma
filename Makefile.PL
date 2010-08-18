@@ -47,7 +47,11 @@ WriteMakefile(
             configure_requires => {
                 'ExtUtils::Depends' => '0.302',
                 %XS_PREREQUISITES
-            }})
+            },
+            resources => {
+                repository => 'http://github.com/chocolateboy/Devel-Pragma',
+            },
+        })
         : ()
     ),
     %XS_DEPENDENCIES,
