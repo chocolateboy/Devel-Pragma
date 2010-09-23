@@ -245,7 +245,7 @@ STATIC OP * devel_pragma_require(pTHX) {
         dXCPT; /* set up variables for try/catch */
 
         XCPT_TRY_START {
-            o = CALL_FPTR(annotation->op_ppaddr)(aTHX);
+            o = annotation->op_ppaddr(aTHX);
         } XCPT_TRY_END
 
         XCPT_CATCH {
@@ -276,7 +276,7 @@ STATIC OP * devel_pragma_require(pTHX) {
     return o;
 
     done:
-        return CALL_FPTR(annotation->op_ppaddr)(aTHX);
+        return annotation->op_ppaddr(aTHX);
 }
 
 STATIC void devel_pragma_enter(pTHX) {
