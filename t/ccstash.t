@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use if (-d 't'), lib => 't';
+use lib qw(t/lib);
 
 use Test::More tests => 5;
 

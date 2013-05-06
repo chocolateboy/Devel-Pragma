@@ -19,8 +19,8 @@ if ($Config{gccversion}) {
 }
 
 our %XS_PREREQUISITES = (
-    'B::Hooks::OP::Annotation' => '0.43',
-    'B::Hooks::OP::Check'      => '0.18',
+    'B::Hooks::OP::Annotation' => '0.44',
+    'B::Hooks::OP::Check'      => '0.19',
 );
 
 our %XS_DEPENDENCIES = ExtUtils::Depends->new(
@@ -32,7 +32,7 @@ WriteMakefile(
     NAME          => 'Devel::Pragma',
     VERSION_FROM  => 'lib/Devel/Pragma.pm',
     PREREQ_PM     => {
-        'B::Hooks::EndOfScope' => '0.09',
+        'Lexical::SealRequireHints' => '0.007',
         %XS_PREREQUISITES
     },
     ABSTRACT_FROM => 'lib/Devel/Pragma.pm',

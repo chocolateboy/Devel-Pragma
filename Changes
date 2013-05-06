@@ -1,5 +1,10 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.60  ???
+    - use Lexical::SealRequireHints to fix %^H bugs
+    - rename my_hints -> hints (my_hints is still supported, but deprecated)
+    - code cleanup
+
 0.54  Mon Aug 16 13:54:36 2010
     - portability fixes for Visual Studio and older GCCs
 
@@ -64,7 +69,7 @@ Revision history for Perl extension Devel::Pragma.
     - fixed MANIFEST (thanks Taro Nishino)
 
 0.10  Mon Jun 23 14:40:42 2008
-    - fix bug that was causing my_hints to clobber %^H 
+    - fix bug that was causing my_hints to clobber %^H
     - added new_scope function
     - removed my_hints aliases
 

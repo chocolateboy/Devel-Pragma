@@ -3,44 +3,23 @@
 use strict;
 use warnings;
 
-use if (-d 't'), lib => 't';
+use lib qw(t/lib);
 
-use Test::More tests => 2;
+use Test::More tests => 4;
 
-# Confirm that values in %^H leak across file boundaries prior to patchlevel 33311 if Devel::Pragma is not used
-
-# we can't assume brokenness as the tests may be
-# run against bleadperls with change #33311 applied
-
-my $already_fixed;
+# Confirm that values in %^H don't leak across require()
 
 {
-    BEGIN {
-        $^H{'Devel::Pragma::Test'} = 1;
-    }
+    use Devel::Pragma qw(:all);
 
-    BEGIN {
-        use test_1;
-        $already_fixed = test_1::test();
-    }
+    BEGIN { hints->{'Devel::Pragma::Test'} = 1 }
+    BEGIN { is($^H{'Devel::Pragma::Test'}, 1) }
 
-    use test_12;
+    use leak;
 
-    SKIP: {
-        skip('patchlevel > 33311', 1) if ($already_fixed);
-        ok (not(test_12::test()), '%^H leaks across file boundaries if Devel::Pragma is not used');
-    }
-}
+    BEGIN { is($^H{'Devel::Pragma::Test'}, 1) }
 
-{
-    use Devel::Pragma qw(my_hints);
-
-    BEGIN { my_hints }
-
-    use lexical1;
-
-    SKIP: {
-        skip('patchlevel > 33311', 1) if ($already_fixed);
-        ok(lexical2::test(), "Devel::Pragma doesn't leak across file boundaries");
-    }
+    my $hh = leak::hh();
+    isa_ok($hh, 'HASH');
+    is($hh->{'Devel::Pragma::Test'}, undef);
 }

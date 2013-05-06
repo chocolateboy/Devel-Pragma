@@ -11,40 +11,25 @@
 #include "hook_op_check.h"
 #include "hook_op_annotation.h"
 
-#define DEVEL_PRAGMA_KEY "Devel::Pragma"
+#define DEVEL_PRAGMA_ON_REQUIRE_KEY "Devel::Pragma::on_require"
 
-#define DEVEL_PRAGMA_ENABLED(table, svp)                                               \
-    ((PL_hints & 0x20000) &&                                                           \
-    (table = GvHV(PL_hintgv)) &&                                                       \
-    (svp = hv_fetch(table, DEVEL_PRAGMA_KEY, sizeof(DEVEL_PRAGMA_KEY) - 1, FALSE)) &&  \
-    *svp &&                                                                            \
+#define DEVEL_PRAGMA_ON_REQUIRE_ENABLED(table, svp)                                                         \
+    ((PL_hints & 0x20000) &&                                                                                \
+    PL_hintgv &&                                                                                            \
+    (table = GvHV(PL_hintgv)) &&                                                                            \
+    (svp = hv_fetch(table, DEVEL_PRAGMA_ON_REQUIRE_KEY, sizeof(DEVEL_PRAGMA_ON_REQUIRE_KEY) - 1, FALSE)) && \
+    *svp &&                                                                                                 \
     SvOK(*svp))
 
 STATIC OP * devel_pragma_check_require(pTHX_ OP * o, void *user_data);
 STATIC OP * devel_pragma_require(pTHX);
 STATIC void devel_pragma_call(pTHX_ const char * const callback, HV * const hv);
-STATIC void devel_pragma_enter(pTHX);
-STATIC void devel_pragma_hash_copy(pTHX_ HV *const from, HV *const to);
-STATIC void devel_pragma_leave(pTHX);
+STATIC void devel_pragma_enable_check_hooks();
 
 STATIC hook_op_check_id devel_pragma_check_do_file_id = 0;
 STATIC hook_op_check_id devel_pragma_check_require_id = 0;
 STATIC OPAnnotationGroup DEVEL_PRAGMA_ANNOTATIONS = NULL;
-STATIC U32 DEVEL_PRAGMA_COMPILING = 0;
-
-/* TODO: more recent perls have a dedicated Perl_hv_copy_hints_hv in hv.c */
-STATIC void devel_pragma_hash_copy(pTHX_ HV *const from, HV *const to) {
-    HE *entry;
-
-    hv_iterinit(from);
-
-    while ((entry = hv_iternext(from))) {
-        const char * key;
-        STRLEN len;
-        key = HePV(entry, len);
-        (void)hv_store(to, key, len, SvREFCNT_inc(newSVsv(HeVAL(entry))), HeHASH(entry));
-    }
-}
+STATIC U32 DEVEL_PRAGMA_CHECK_HOOKS_ENABLED = 0;
 
 STATIC void devel_pragma_call(pTHX_ const char * const callback, HV * const hv) {
     dSP;
@@ -67,7 +52,7 @@ STATIC OP * devel_pragma_check_require(pTHX_ OP * o, void *user_data) {
 
     PERL_UNUSED_VAR(user_data);
 
-    if (!DEVEL_PRAGMA_ENABLED(table, svp)) {
+    if (!DEVEL_PRAGMA_ON_REQUIRE_ENABLED(table, svp)) {
         goto done;
     }
 
@@ -78,7 +63,7 @@ STATIC OP * devel_pragma_check_require(pTHX_ OP * o, void *user_data) {
 
     /* <copypasta-ish> */
     if (o->op_type != OP_DOFILE) {
-        if (o->op_flags & OPf_KIDS) { 
+        if (o->op_flags & OPf_KIDS) {
             SVOP * const kid = (SVOP*)cUNOPo->op_first;
 
             if (kid->op_type == OP_CONST) { /* weed out use VERSION */
@@ -100,25 +85,19 @@ STATIC OP * devel_pragma_check_require(pTHX_ OP * o, void *user_data) {
     }
     /* </copypasta-ish> */
 
-    (void)op_annotation_new(DEVEL_PRAGMA_ANNOTATIONS, o, NULL, NULL);
+    op_annotate(DEVEL_PRAGMA_ANNOTATIONS, o, NULL, NULL);
     o->op_ppaddr = devel_pragma_require;
 
     done:
         return o;
 }
 
-/*
- * much of this is copypasta from pp_require in pp_ctl.c
- *
- * the various checks that delegate to the original function (goto done) ensure
- * we only modify %^H for code paths that use it i.e. we only modify %^H for
- * cases that reach the fix in patch #33311
- */
+/* much of this is copypasta from pp_require in pp_ctl.c */
 STATIC OP * devel_pragma_require(pTHX) {
     /* <copypasta> */
     dSP;
     SV * sv;
-    HV *hh, *temp_hh;
+    HV *hh, *copy_of_hh;
     const char *name;
     STRLEN len;
     char * unixname;
@@ -130,28 +109,18 @@ STATIC OP * devel_pragma_require(pTHX) {
 
     OP * o = NULL;
     /* used as a boolean to determine whether any require callbacks are registered */
-    SV ** callbacks;
-    
+    SV ** callbacks = NULL;
+    /* we always need this (to get the ppaddr to delegate to) so define it upfront */
     OPAnnotation *annotation = op_annotation_get(DEVEL_PRAGMA_ANNOTATIONS, PL_op);
-
-    callbacks = NULL;
-
-    /*
-     * if this is called at runtime, then the %^H for the COPs in the required file
-     * was already cleared, so this is a no-op
-     */
-    if (!DEVEL_PRAGMA_COMPILING) { /* runtime; for some reason, IN_PERL_COMPILETIME doesn't work */
-        goto done;
-    }
 
     /* <copypasta> */
     sv = TOPs;
 
-    if (PL_op->op_type != OP_DOFILE) { 
+    if (PL_op->op_type != OP_DOFILE) {
         if (SvNIOKp(sv)) { /* exclude use 5 and use 5.008 &c. */
             goto done;
         }
-                
+
 #ifdef SvVOK
         if (SvVOK(sv)) { /* exclude use v5.008 and use 5.6.1 &c. */
             goto done;
@@ -194,52 +163,23 @@ STATIC OP * devel_pragma_require(pTHX) {
 
     if (PL_op->op_type == OP_REQUIRE) {
         SV * const * const svp = hv_fetch(GvHVn(PL_incgv), unixname, unixlen, 0);
-                                          
-        if (svp) {
-            if (*svp == &PL_sv_undef) {
-                goto done;
-            } else {
-                RETPUSHYES;
-            }
+
+        if (svp) { /* already loaded: see pp_require */
+            goto done;
         }
     }
     /* </copypasta> */
 
-    /* 
-     * after much trial and error, it turns out the most reliable and least obtrusive way to
-     * prevent %^H leaking across require() is to hv_clear it before the call and to restore its values
-     * (taking care to preserve any magic) afterwards
-     */
-
     hh = GvHV(PL_hintgv); /* %^H */
-    temp_hh = newHVhv(hh); /* copy %^H */
-    hv_clear(hh); /* clear %^H (and ensure callbacks don't have access to the original) */
+    copy_of_hh = newHVhv(hh); /* create a snapshot of %^H */
+    callbacks = hv_fetchs(copy_of_hh, "Devel::Pragma::on_require", FALSE);
 
-    callbacks = hv_fetchs(temp_hh, "Devel::Pragma(Hooks)", FALSE);
-
-    if (callbacks) {
-        devel_pragma_call(aTHX_ "Devel::Pragma::_pre_require", temp_hh); /* invoke the pre-require callbacks */
+    /* make sure the on_require callbacks are still defined i.e. this is not being called at runtime */
+    if (!callbacks) {
+        goto done;
     }
 
-    /*
-     * this module is itself lexically-scoped, and therefore is disabled across file boundaries
-     * we could eat our own dog food and do this in perl via on_require, but that's an unnecessary
-     * pessimization if no other callbacks are registered
-     * */
-    devel_pragma_leave(aTHX);
-
-    /*
-     * FIXME
-     *
-     * the pre-require hook receives a copy of %^H; if the callback manipulates the copy,
-     * the changes are merged back into %^H
-     *
-     * currently, the post-require hook receives a copy that isn't merged back i.e. it's passed the copy
-     * *after* the merge
-     *
-     * either a) document this, b) pass the post-require hook the restored %^H, or c) pass it
-     * the copy *before* merging it back into %^H
-     */
+    devel_pragma_call(aTHX_ "Devel::Pragma::_pre_require", copy_of_hh); /* invoke the pre-require callbacks */
 
     {
         dXCPT; /* set up variables for try/catch */
@@ -249,29 +189,19 @@ STATIC OP * devel_pragma_require(pTHX) {
         } XCPT_TRY_END
 
         XCPT_CATCH {
-            devel_pragma_enter(aTHX); /* re-enable once the file has been compiled */
-            devel_pragma_hash_copy(aTHX_ temp_hh, hh); /* restore %^H's values from the backup */
+            devel_pragma_call(aTHX_ "Devel::Pragma::_post_require", copy_of_hh); /* invoke the post-require callbacks */
 
-            if (callbacks) {
-                devel_pragma_call(aTHX_ "Devel::Pragma::_post_require", temp_hh); /* invoke the post-require callbacks */
-            }
-
-            hv_clear(temp_hh);
-            hv_undef(temp_hh);
+            hv_clear(copy_of_hh);
+            hv_undef(copy_of_hh);
 
             XCPT_RETHROW;
         }
     }
 
-    devel_pragma_enter(aTHX); /* re-enable once the file has been compiled */
-    devel_pragma_hash_copy(aTHX_ temp_hh, hh); /* restore %^H's values from the backup */
+    devel_pragma_call(aTHX_ "Devel::Pragma::_post_require", copy_of_hh); /* invoke the post-require callbacks */
 
-    if (callbacks) {
-        devel_pragma_call(aTHX_ "Devel::Pragma::_post_require", temp_hh); /* invoke the post-require callbacks */
-    }
-
-    hv_clear(temp_hh);
-    hv_undef(temp_hh);
+    hv_clear(copy_of_hh);
+    hv_undef(copy_of_hh);
 
     return o;
 
@@ -279,37 +209,30 @@ STATIC OP * devel_pragma_require(pTHX) {
         return annotation->op_ppaddr(aTHX);
 }
 
-STATIC void devel_pragma_enter(pTHX) {
-    if (DEVEL_PRAGMA_COMPILING != 0) {
-        croak("Devel::Pragma: scope overflow");
-    } else {
-        DEVEL_PRAGMA_COMPILING = 1;
+STATIC void devel_pragma_enable_check_hooks() {
+    if (DEVEL_PRAGMA_CHECK_HOOKS_ENABLED != 1) {
         devel_pragma_check_do_file_id = hook_op_check(OP_DOFILE, devel_pragma_check_require, NULL);
         devel_pragma_check_require_id = hook_op_check(OP_REQUIRE, devel_pragma_check_require, NULL);
+
         /* work around B::Hooks::OP::Check issue on 5.8.1 */
         SvREFCNT_inc(devel_pragma_check_do_file_id);
         SvREFCNT_inc(devel_pragma_check_require_id);
+
+        DEVEL_PRAGMA_CHECK_HOOKS_ENABLED = 1;
     }
 }
 
-STATIC void devel_pragma_leave(pTHX) {
-    if (DEVEL_PRAGMA_COMPILING != 1) {
-        croak("Devel::Pragma: scope underflow");
-    } else {
-        DEVEL_PRAGMA_COMPILING = 0;
-        hook_op_check_remove(OP_DOFILE, devel_pragma_check_do_file_id);
-        hook_op_check_remove(OP_REQUIRE, devel_pragma_check_require_id);
-    }
-}
-
-MODULE = Devel::Pragma                PACKAGE = Devel::Pragma                
+MODULE = Devel::Pragma                PACKAGE = Devel::Pragma
 
 BOOT:
     DEVEL_PRAGMA_ANNOTATIONS = op_annotation_group_new();
+    devel_pragma_enable_check_hooks();
 
 void
-END()
+DESTROY(SV * sv)
+    PROTOTYPE:$
     CODE:
+        PERL_UNUSED_VAR(sv); /* silence warning */
         if (DEVEL_PRAGMA_ANNOTATIONS) { /* make sure it was initialised */
             op_annotation_group_free(aTHX_ DEVEL_PRAGMA_ANNOTATIONS);
         }
@@ -328,15 +251,3 @@ xs_scope()
     PROTOTYPE:
     CODE:
         XSRETURN_UV(PTR2UV(GvHV(PL_hintgv)));
-
-void
-xs_enter()
-    PROTOTYPE:
-    CODE:
-        devel_pragma_enter(aTHX);
-
-void
-xs_leave()
-    PROTOTYPE:
-    CODE:
-        devel_pragma_leave(aTHX);

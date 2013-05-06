@@ -5,14 +5,14 @@ use warnings;
 
 no warnings 'portable'; # suppress "v-string in use/require non-portable" warnings
 
-use if (-d 't'), lib => 't'; 
+use lib qw(t/lib);
 
 use Test::More tests => 24;
-use Devel::Pragma qw(my_hints);
+use Devel::Pragma qw(hints);
 use File::Spec;
 
 # make sure use VERSION still works OK
-use 5;         
+use 5;
 use 5.006;
 use 5.006_000;
 use 5.6.0;
@@ -20,7 +20,7 @@ use v5.6.0;
 
 {
     BEGIN {
-        my_hints();
+        hints();
         $^H{'Devel::Pragma::Test'} = 1;
     }
 
@@ -37,7 +37,7 @@ use v5.6.0;
 
 {
     BEGIN {
-        my_hints();
+        hints();
         $^H{'Devel::Pragma::Test'} = 1;
     }
 
@@ -48,7 +48,7 @@ use v5.6.0;
 
 {
     BEGIN {
-        my_hints();
+        hints();
         $^H{'Devel::Pragma::Test'} = 1;
     }
 
@@ -63,7 +63,7 @@ use v5.6.0;
 
 {
     BEGIN {
-        my_hints();
+        hints();
         $^H{'Devel::Pragma::Test'} = 1;
     }
 
@@ -78,12 +78,12 @@ use v5.6.0;
 
 {
     BEGIN {
-        my_hints();
+        hints();
         $^H{'Devel::Pragma::Test'} = 1;
     }
 
     BEGIN {
-        my $file = (-d 't') ? File::Spec->catfile('t', 'test_5.pm') : 'test_5.pm';
+        my $file = File::Spec->catfile('t', 'lib', 'test_5.pm');
         do $file;
     }
 
@@ -96,11 +96,11 @@ use v5.6.0;
 
 {
     BEGIN {
-        my_hints();
+        hints();
         $^H{'Devel::Pragma::Test'} = 1;
     }
 
-    my $file = (-d 't') ? File::Spec->catfile('t', 'test_6.pm') : 'test_6.pm';
+    my $file = File::Spec->catfile('t', 'lib', 'test_6.pm');
     do $file;
 
     ok(test_6::test(), 'runtime do FILE');
@@ -108,7 +108,7 @@ use v5.6.0;
 
 eval {
     BEGIN {
-        my_hints();
+        hints();
         $^H{'Devel::Pragma::Test'} = 1;
     }
 
@@ -126,7 +126,7 @@ ok(not($@), 'eval BLOCK OK');
 eval q|
     {
         BEGIN {
-            my_hints();
+            hints();
             $^H{'Devel::Pragma::Test'} = 1;
         }
 
@@ -144,7 +144,7 @@ ok(not($@), 'eval EXPR OK');
 
 {
     BEGIN {
-        my_hints();
+        hints();
         $^H{'Devel::Pragma::Test'} = 1;
     }
 
@@ -178,11 +178,11 @@ ok(not($@), 'eval EXPR OK');
 {
     BEGIN {
         $^H{'Devel::Pragma::Test'} = 1;
-        my_hints;
+        hints;
     }
 
     BEGIN {
-        ok((($^H & 0x20000) == 0x20000), 'my_hints sets LOCALIZE_HH');
-        is(my_hints->{'Devel::Pragma::Test'}, 1, 'my_hints returns a reference to %^H');
+        ok((($^H & 0x20000) == 0x20000), 'hints sets LOCALIZE_HH');
+        is(hints->{'Devel::Pragma::Test'}, 1, 'hints returns a reference to %^H');
     }
 }
