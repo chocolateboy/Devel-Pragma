@@ -16,7 +16,7 @@ use XSLoader;
 
 use base qw(Exporter);
 
-our $VERSION = '0.54';
+our $VERSION = '0.60';
 our @EXPORT_OK = qw(my_hints hints new_scope ccstash scope fqname on_require);
 our %EXPORT_TAGS = (all => [ @EXPORT_OK ]);
 
@@ -170,28 +170,28 @@ Devel::Pragma - helper functions for developers of lexical pragmas
 
 =head1 SYNOPSIS
 
-  package MyPragma;
+    package MyPragma;
 
-  use Devel::Pragma qw(:all);
+    use Devel::Pragma qw(:all);
 
-  sub import {
-      my ($class, %options) = @_;
-      my $hints = hints; # lexically-scoped %^H
-      my $caller = ccstash(); # currently-compiling stash
+    sub import {
+        my ($class, %options) = @_;
+        my $hints  = hints;        # lexically-scoped %^H
+        my $caller = ccstash();    # currently-compiling stash
 
-      unless ($hints->{MyPragma}) { # top-level
-           $hints->{MyPragma} = 1;
+        unless ($hints->{MyPragma}) { # top-level
+            $hints->{MyPragma} = 1;
 
-           # disable/enable this pragma before/after compile-time requires
-           on_require \&teardown, \&setup;
-      }
+            # disable/enable this pragma before/after compile-time requires
+            on_require \&teardown, \&setup;
+        }
 
-      if (new_scope($class)) {
-          ...
-      }
+        if (new_scope($class)) {
+            ...
+        }
 
-      my $scope_id = scope();
-  }
+        my $scope_id = scope();
+    }
 
 =head1 DESCRIPTION
 
@@ -362,37 +362,17 @@ These are called whenever C<require> or C<do FILE> OPs are executed at compile-t
 typically via C<use> statements.
 
 C<on_require> takes two callbacks (i.e. anonymous subs or sub references), each of which is called
-with a reference to C<%^H>. The first callback is called before C<require>, and the second is called
-after C<require> has loaded and compiled its file. %^H is cleared before C<require> and restored
-afterwards. (If the file has already been loaded, or the required value is a vstring rather than
-a file name, then both the callbacks and the clearance/restoration of C<%^H> are skipped.)
+with a reference to a copy of C<%^H>. The first callback is called before C<require>, and the second
+is called after C<require> has loaded and compiled its file. If the file has already been loaded,
+or the required value is a vstring rather than a file name, then both the callbacks are skipped.
 
 Multiple callbacks can be registered in a given scope, and they are called in the order in which they
 are registered. Callbacks are unregistered automatically at the end of the (compilation of) the scope
 in which they are registered.
 
-C<on_require> callbacks can be used to disable/re-enable OP check hooks installed via
-L<B::Hooks::OP::Check|B::Hooks::OP::Check> i.e. they can be used to make check hooks
-lexically-scoped.
-
-    package MyPragma;
-
-    use Devel::Pragma qw(:all);
-
-    sub import {
-        my ($class, %args) = @_;
-        my $hints = hints;
-
-        unless ($hints->{MyPragma}) { # top-level
-            $hints->{MyPragma} = 1;
-            on_scope_end \&teardown;
-            on_require \&teardown, \&setup;
-            setup;
-        }
-    }
-
-C<on_require> callbacks can also be used to rollback/restore lexical side-effects i.e. lexical features
-whose side-effects extend beyond C<%^H> (like L<"hints">, C<on_require> implicitly renders C<%^H> lexically-scoped).
+C<on_require> callbacks can be used to rollback/restore lexical side-effects i.e. lexical features
+whose side-effects extend beyond C<%^H> (like L<"hints">, C<on_require> implicitly enables the scoped
+behaviour of C<%^H>).
 
 Fatal exceptions raised in C<on_require> callbacks are trapped and reported as warnings. If a fatal
 exception is raised in the C<require> or C<do FILE> call, the post-C<require> callbacks are invoked
@@ -400,7 +380,7 @@ before that exception is thrown.
 
 =head1 VERSION
 
-0.54
+0.60
 
 =head1 SEE ALSO
 
@@ -434,7 +414,7 @@ chocolateboy <chocolate@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2008-2010 by chocolateboy
+Copyright (C) 2008-2013 by chocolateboy
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.1 or,

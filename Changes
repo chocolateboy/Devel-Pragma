@@ -1,8 +1,9 @@
 Revision history for Perl extension Devel::Pragma.
 
-0.60  ???
+0.60  Mon Oct 7 12:37:09 2013
     - use Lexical::SealRequireHints to fix %^H bugs
     - rename my_hints -> hints (my_hints is still supported, but deprecated)
+    - update ppport.h from 3.19 to 3.20
     - code cleanup
 
 0.54  Mon Aug 16 13:54:36 2010
