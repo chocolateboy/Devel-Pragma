@@ -176,6 +176,8 @@ STATIC OP * devel_pragma_require(pTHX) {
 
     /* make sure the on_require callbacks are still defined i.e. this is not being called at runtime */
     if (!callbacks) {
+        hv_clear(copy_of_hh);
+        hv_undef(copy_of_hh);
         goto done;
     }
 
