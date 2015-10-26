@@ -16,7 +16,7 @@ use XSLoader;
 
 use base qw(Exporter);
 
-our $VERSION = '0.61';
+our $VERSION = '0.62';
 our @EXPORT_OK = qw(my_hints hints new_scope ccstash scope fqname on_require);
 our %EXPORT_TAGS = (all => [ @EXPORT_OK ]);
 
@@ -380,7 +380,7 @@ before that exception is thrown.
 
 =head1 VERSION
 
-0.61
+0.62
 
 =head1 SEE ALSO
 
