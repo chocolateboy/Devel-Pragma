@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Pragma.
 
+0.61  Mon 26 Oct 11:33:19 2015
+    - specify minimum perl version (thanks Lisa Harey)
+
 0.60  Sun Oct 20 12:24:09 2013
     - use Lexical::SealRequireHints to fix %^H bugs
     - rename my_hints -> hints (my_hints is still supported, but deprecated)

@@ -7,7 +7,8 @@ use ExtUtils::MakeMaker;
 use ExtUtils::Depends;
 use Config;
 
-our $OPTIMIZE;
+my $EUMM_VERSION = eval($ExtUtils::MakeMaker::VERSION);
+my $OPTIMIZE;
 
 if ($Config{gccversion}) {
     $OPTIMIZE = '-O3 -Wall';
@@ -41,8 +42,9 @@ WriteMakefile(
     DEFINE        => '',
     INC           => '-I.',
     OPTIMIZE      => $OPTIMIZE,
-    ($ExtUtils::MakeMaker::VERSION >= 6.31 ? (LICENSE => 'perl') : ()),
-    ($ExtUtils::MakeMaker::VERSION >= 6.46 ?
+    ($EUMM_VERSION >= 6.31 ? (LICENSE => 'perl') : ()),
+    ($EUMM_VERSION >= 6.48 ? (MIN_PERL_VERSION => '5.8.1') : ()),
+    ($EUMM_VERSION >= 6.46 ?
         (META_MERGE => {
             configure_requires => {
                 'ExtUtils::Depends' => '0.302',
@@ -54,6 +56,5 @@ WriteMakefile(
         })
         : ()
     ),
-    ($ExtUtils::MakeMaker::VERSION >= 6.48 ? (MIN_PERL_VERSION => 5.8.0) : ()),
     %XS_DEPENDENCIES,
 );

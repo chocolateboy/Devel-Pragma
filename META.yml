@@ -26,4 +26,4 @@ requires:
   Lexical::SealRequireHints: 0.007
 resources:
   repository: http://github.com/chocolateboy/Devel-Pragma
-version: 0.60
+version: 0.61
