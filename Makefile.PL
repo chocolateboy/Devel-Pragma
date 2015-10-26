@@ -54,5 +54,6 @@ WriteMakefile(
         })
         : ()
     ),
+    ($ExtUtils::MakeMaker::VERSION >= 6.48 ? (MIN_PERL_VERSION => 5.8.0) : ()),
     %XS_DEPENDENCIES,
 );
