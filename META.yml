@@ -5,12 +5,9 @@ author:
 build_requires:
   ExtUtils::MakeMaker: '0'
 configure_requires:
-  B::Hooks::OP::Annotation: '0.44'
-  B::Hooks::OP::Check: '0.19'
-  ExtUtils::Depends: '0.302'
   ExtUtils::MakeMaker: '0'
-dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 7.0401, CPAN::Meta::Converter version 2.150005'
+dynamic_config: 0
+generated_by: 'ExtUtils::MakeMaker version 7.1001, CPAN::Meta::Converter version 2.150005'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -20,12 +17,11 @@ no_index:
   directory:
     - t
     - inc
+    - xt
 requires:
-  B::Hooks::OP::Annotation: '0.44'
-  B::Hooks::OP::Check: '0.19'
-  Lexical::SealRequireHints: '0.007'
+  Lexical::SealRequireHints: '0.010'
   perl: '5.008001'
 resources:
   repository: http://github.com/chocolateboy/Devel-Pragma
-version: '0.62'
-x_serialization_backend: 'CPAN::Meta::YAML version 0.012'
+version: v1.0.0
+x_serialization_backend: 'CPAN::Meta::YAML version 0.018'

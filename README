@@ -1,10 +1,11 @@
-Devel::Pragma version 0.62
+Devel::Pragma version 1.0.0
 ================================
 
-This module provides helper functions for developers of lexical pragmas.
-These can be used both in older versions of perl (from 5.8.1), which
-have limited support for lexical pragmas, and in the most recent
-versions, which have improved support.
+This module provides helper functions for developers of lexical pragmas, though a few functions may
+be useful to non-pragma developers as well.
+
+Pragmas can be used both in older versions of perl (from 5.8.1), which had limited support, and in
+the most recent versions, which have improved support.
 
 INSTALLATION
 
@@ -19,12 +20,11 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-    ExtUtils::Depends
     Lexical::SealRequireHints
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2008-2015 by chocolateboy
+Copyright (C) 2008-2016 by chocolateboy
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.1 or,

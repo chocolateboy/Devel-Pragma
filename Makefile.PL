@@ -22,7 +22,7 @@ WriteMakefile(
     NAME          => 'Devel::Pragma',
     VERSION_FROM  => 'lib/Devel/Pragma.pm',
     PREREQ_PM     => {
-        'Lexical::SealRequireHints' => '0.007',
+        'Lexical::SealRequireHints' => '0.010',
     },
     ABSTRACT_FROM => 'lib/Devel/Pragma.pm',
     AUTHOR        => 'chocolateboy <chocolate@cpan.org>',
@@ -36,6 +36,7 @@ WriteMakefile(
         (META_MERGE => {
             resources => {
                 repository => 'http://github.com/chocolateboy/Devel-Pragma',
+                bugtracker => 'http://github.com/chocolateboy/Devel-Pragma/issues',
             },
         })
         : ()

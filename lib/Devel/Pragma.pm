@@ -14,7 +14,7 @@ use XSLoader;
 
 use base qw(Exporter);
 
-our $VERSION = '0.62';
+our $VERSION = '1.0.0';
 our @EXPORT_OK = qw(my_hints hints new_scope ccstash scope fqname);
 our %EXPORT_TAGS = (all => [ @EXPORT_OK ]);
 
@@ -305,7 +305,7 @@ prints:
 
 =head1 VERSION
 
-0.62
+1.0.0
 
 =head1 SEE ALSO
 
@@ -339,7 +339,7 @@ chocolateboy <chocolate@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2008-2015 by chocolateboy
+Copyright (C) 2008-2016 by chocolateboy
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.1 or,

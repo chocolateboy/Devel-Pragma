@@ -1,5 +1,8 @@
 Revision history for Perl extension Devel::Pragma.
 
+1.0.0 Tue 28 Jun 09:15:13 2016
+    - remove on_require
+
 0.62  Mon 26 Oct 12:13:17 2015
     - update ppport.h
     - update copyright year
