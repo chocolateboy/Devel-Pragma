@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use ExtUtils::MakeMaker;
-use ExtUtils::Depends;
 use Config;
 
 my $EUMM_VERSION = eval($ExtUtils::MakeMaker::VERSION);
@@ -19,22 +18,11 @@ if ($Config{gccversion}) {
     $OPTIMIZE = $Config{optimize};
 }
 
-our %XS_PREREQUISITES = (
-    'B::Hooks::OP::Annotation' => '0.44',
-    'B::Hooks::OP::Check'      => '0.19',
-);
-
-our %XS_DEPENDENCIES = ExtUtils::Depends->new(
-    'Devel::Pragma',
-    keys(%XS_PREREQUISITES),
-)->get_makefile_vars();
-
 WriteMakefile(
     NAME          => 'Devel::Pragma',
     VERSION_FROM  => 'lib/Devel/Pragma.pm',
     PREREQ_PM     => {
         'Lexical::SealRequireHints' => '0.007',
-        %XS_PREREQUISITES
     },
     ABSTRACT_FROM => 'lib/Devel/Pragma.pm',
     AUTHOR        => 'chocolateboy <chocolate@cpan.org>',
@@ -46,15 +34,10 @@ WriteMakefile(
     ($EUMM_VERSION >= 6.48 ? (MIN_PERL_VERSION => '5.8.1') : ()),
     ($EUMM_VERSION >= 6.46 ?
         (META_MERGE => {
-            configure_requires => {
-                'ExtUtils::Depends' => '0.302',
-                %XS_PREREQUISITES
-            },
             resources => {
                 repository => 'http://github.com/chocolateboy/Devel-Pragma',
             },
         })
         : ()
     ),
-    %XS_DEPENDENCIES,
 );

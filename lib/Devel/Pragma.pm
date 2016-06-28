@@ -1,6 +1,6 @@
 package Devel::Pragma;
 
-use 5.008;
+use 5.008001;
 
 # make sure this is loaded first
 use Lexical::SealRequireHints;
@@ -8,8 +8,6 @@ use Lexical::SealRequireHints;
 use strict;
 use warnings;
 
-use B::Hooks::OP::Annotation;
-use B::Hooks::OP::Check;
 use Carp qw(carp croak);
 use Scalar::Util;
 use XSLoader;
@@ -17,13 +15,8 @@ use XSLoader;
 use base qw(Exporter);
 
 our $VERSION = '0.62';
-our @EXPORT_OK = qw(my_hints hints new_scope ccstash scope fqname on_require);
+our @EXPORT_OK = qw(my_hints hints new_scope ccstash scope fqname);
 our %EXPORT_TAGS = (all => [ @EXPORT_OK ]);
-
-# Perform (XS) cleanup on global destruction (DESTROY is defined in Pragma.xs).
-# END blocks don't work for this: see https://rt.cpan.org/Ticket/Display.html?id=80400
-# according to perlvar, package variables are garbage collected after END blocks
-our $__GLOBAL_DESTRUCTION_MONITOR__ = bless {};
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
@@ -108,51 +101,6 @@ sub _isa($$) {
     return Scalar::Util::blessed($ref) ? $ref->isa($class) : ref($ref) eq $class;
 }
 
-# run registered callbacks before performing a compile-time require or do FILE
-sub _pre_require($) {
-    _callback(0, shift);
-}
-
-# run registered callbacks after performing a compile-time require or do FILE
-sub _post_require($) {
-    local $@; # if there was an exception on require, make sure we don't clobber it
-    _callback(1, shift)
-}
-
-# common code for pre- and post-require hooks
-sub _callback($$) {
-    my ($index, $hints) = @_;
-    my $pairs = $hints->{'Devel::Pragma::on_require'} || [];
-
-    for my $pair (@$pairs) {
-        eval { $pair->[$index]->($hints) };
-
-        if ($@) {
-            my $stage = [ qw(pre post) ]->[$index];
-            carp __PACKAGE__ . ": exception in $stage-require callback: $@";
-        }
-    }
-}
-
-# register pre- and/or post-require hooks
-# these are only called if the require occurs at compile-time
-sub on_require($$) {
-    my $hints = hints();
-
-    for my $index (0 .. 1) {
-        my $arg = $_[$index];
-        my $ref = defined($arg) ? ref($arg) : '<undef>';
-
-        croak(sprintf('%s: invalid arg %d; expected CODE, got %s', __PACKAGE__, $index + 1, $ref))
-            unless ($arg and _isa($arg, 'CODE'));
-    }
-
-    my $old_callbacks = $hints->{'Devel::Pragma::on_require'} || [];
-    $hints->{'Devel::Pragma::on_require'} = [ @$old_callbacks, [ @_ ] ];
-
-    return;
-}
-
 # make sure "enable lexically-scoped %^H" is set in older perls, and export the requested functions
 sub import {
     my $class = shift;
@@ -181,9 +129,6 @@ Devel::Pragma - helper functions for developers of lexical pragmas
 
         unless ($hints->{MyPragma}) { # top-level
             $hints->{MyPragma} = 1;
-
-            # disable/enable this pragma before/after compile-time requires
-            on_require \&teardown, \&setup;
         }
 
         if (new_scope($class)) {
@@ -195,13 +140,16 @@ Devel::Pragma - helper functions for developers of lexical pragmas
 
 =head1 DESCRIPTION
 
-This module provides helper functions for developers of lexical pragmas. These can be used both in older versions of
-perl (from 5.8.1), which have limited support for lexical pragmas, and in the most recent versions, which have improved
-support.
+This module provides helper functions for developers of lexical pragmas, though a few functions may
+be useful to non-pragma developers as well.
+
+Pragmas can be used both in older versions of perl (from 5.8.1), which had limited support, and in
+the most recent versions, which have improved support.
 
 =head1 EXPORTS
 
-C<Devel::Pragma> exports the following functions on demand. They can all be imported at once by using the C<:all> tag. e.g.
+C<Devel::Pragma> exports the following functions on demand. They can all be imported at once by using
+the C<:all> tag. e.g.
 
     use Devel::Pragma qw(:all);
 
@@ -262,7 +210,7 @@ distinguish or compare scopes.
 
 A warning is issued if C<scope> (or C<new_scope>) is called in a context in which it doesn't make sense i.e. if the
 scoped behaviour of C<%^H> has not been enabled - either by explicitly modifying C<$^H>, or by calling
-L<"hints"> or L<"on_require">.
+L<"hints">.
 
 =head2 ccstash
 
@@ -354,29 +302,6 @@ prints:
     Foo::Bar::baz
     Foo::Bar::baz
     Some::Other::Package::quux
-
-=head2 on_require
-
-This function allows pragmas to register pre- and post-C<require> (and C<do FILE>) callbacks.
-These are called whenever C<require> or C<do FILE> OPs are executed at compile-time,
-typically via C<use> statements.
-
-C<on_require> takes two callbacks (i.e. anonymous subs or sub references), each of which is called
-with a reference to a copy of C<%^H>. The first callback is called before C<require>, and the second
-is called after C<require> has loaded and compiled its file. If the file has already been loaded,
-or the required value is a vstring rather than a file name, then both the callbacks are skipped.
-
-Multiple callbacks can be registered in a given scope, and they are called in the order in which they
-are registered. Callbacks are unregistered automatically at the end of the (compilation of) the scope
-in which they are registered.
-
-C<on_require> callbacks can be used to rollback/restore lexical side-effects i.e. lexical features
-whose side-effects extend beyond C<%^H> (like L<"hints">, C<on_require> implicitly enables the scoped
-behaviour of C<%^H>).
-
-Fatal exceptions raised in C<on_require> callbacks are trapped and reported as warnings. If a fatal
-exception is raised in the C<require> or C<do FILE> call, the post-C<require> callbacks are invoked
-before that exception is thrown.
 
 =head1 VERSION
 

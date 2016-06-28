@@ -19,8 +19,6 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-    B::Hooks::OP::Annotation
-    B::Hooks::OP::Check
     ExtUtils::Depends
     Lexical::SealRequireHints
 

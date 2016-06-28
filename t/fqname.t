@@ -13,6 +13,7 @@ use Devel::Pragma qw(fqname);
 
 sub import {
     my ($class, @names) = @_;
+
     for my $name (@names) {
         my $fqname = fqname($name);
         push @::RESULTS, $fqname;
