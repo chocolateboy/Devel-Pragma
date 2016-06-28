@@ -22,6 +22,7 @@ requires:
   Lexical::SealRequireHints: '0.010'
   perl: '5.008001'
 resources:
+  bugtracker: http://github.com/chocolateboy/Devel-Pragma/issues
   repository: http://github.com/chocolateboy/Devel-Pragma
-version: v1.0.0
+version: 1.0.1
 x_serialization_backend: 'CPAN::Meta::YAML version 0.018'

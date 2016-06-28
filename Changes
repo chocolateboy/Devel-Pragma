@@ -1,5 +1,9 @@
 Revision history for Perl extension Devel::Pragma.
 
+1.0.1 Tue 28 Jun 10:09:48 2016
+    - META.yml: add the bugtracker link
+    - META.yml: fix the version
+
 1.0.0 Tue 28 Jun 09:15:13 2016
     - remove on_require
 
