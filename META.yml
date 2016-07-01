@@ -24,5 +24,5 @@ requires:
 resources:
   bugtracker: http://github.com/chocolateboy/Devel-Pragma/issues
   repository: http://github.com/chocolateboy/Devel-Pragma
-version: 1.0.1
+version: 1.1.0
 x_serialization_backend: 'CPAN::Meta::YAML version 0.018'

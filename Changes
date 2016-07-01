@@ -1,5 +1,13 @@
 Revision history for Perl extension Devel::Pragma.
 
+1.1.0 Fri 1 Jul 14:20:06 2016
+    - overhaul ccstash
+        - simplify the tests
+        - improve the documentation
+        - return undef if called outside of a require
+    - remove the do FILE tests from hints.t since
+      Lexical::SealRequireHints doesn't support it (RT#85101)
+
 1.0.1 Tue 28 Jun 10:09:48 2016
     - META.yml: add the bugtracker link
     - META.yml: fix the version

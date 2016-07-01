@@ -1,36 +1,22 @@
 #!/usr/bin/env perl
 
+package CCstash;
+
 use strict;
 use warnings;
 
+use Devel::Pragma qw(ccstash);
+
 use lib qw(t/lib);
 
-use Test::More tests => 5;
+use Test::More tests => 3;
 
-use subclass_1;
+is ccstash, undef; # undef in code that's not being `require`d
 
-Test::More::is(subclass_1->test, 'main', 'default main');
+use CCstashCallee1;
 
-package main;
+is(CCstashCallee1->test, 'CCstash');
 
-use subclass_2;
+require CCstashCallee2;
 
-Test::More::is(subclass_2->test, 'main', 'explicit main');
-
-package Some::Other::Package;
-
-use subclass_3;
-
-Test::More::is(subclass_3->test, 'Some::Other::Package', 'new package');
-
-{
-    package nested;
-
-    use subclass_4;
-
-    Test::More::is(subclass_4->test, 'nested', 'nested package');
-}
-
-use subclass_5;
-
-Test::More::is(subclass_5->test, 'Some::Other::Package', 'back to previous package');
+is(CCstashCallee2->test, 'CCstashCallee2');

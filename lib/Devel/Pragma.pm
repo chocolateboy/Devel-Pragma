@@ -14,7 +14,7 @@ use XSLoader;
 
 use base qw(Exporter);
 
-our $VERSION = '1.0.1';
+our $VERSION = '1.1.0';
 our @EXPORT_OK = qw(my_hints hints new_scope ccstash scope fqname);
 our %EXPORT_TAGS = (all => [ @EXPORT_OK ]);
 
@@ -124,8 +124,8 @@ Devel::Pragma - helper functions for developers of lexical pragmas
 
     sub import {
         my ($class, %options) = @_;
-        my $hints  = hints;        # lexically-scoped %^H
-        my $caller = ccstash();    # currently-compiling stash
+        my $hints  = hints;        # the builtin (%^H) used to implement lexical pragmas
+        my $caller = ccstash();    # the name of the currently-compiling package (stash)
 
         unless ($hints->{MyPragma}) { # top-level
             $hints->{MyPragma} = 1;
@@ -140,8 +140,8 @@ Devel::Pragma - helper functions for developers of lexical pragmas
 
 =head1 DESCRIPTION
 
-This module provides helper functions for developers of lexical pragmas, though a few functions may
-be useful to non-pragma developers as well.
+This module provides helper functions for developers of lexical pragmas (and a few functions that may
+be useful to non-pragma developers as well).
 
 Pragmas can be used both in older versions of perl (from 5.8.1), which had limited support, and in
 the most recent versions, which have improved support.
@@ -214,120 +214,106 @@ L<"hints">.
 
 =head2 ccstash
 
-This returns the name of the currently-compiling stash. It can be used as a replacement for the scalar form of
-C<caller> to provide the name of the package in which C<use MyPragma> is called. Unlike C<caller>, it
-returns the same value regardless of the number of intervening calls before C<MyPragma::import>
-is reached.
+Returns the name of the currently-compiling package (stash). It only works inside code that's being C<required>,
+either in a BEGIN block via C<use> or at runtime. In practice, its use should be restricted to compile-time i.e.
+C<import> methods and any other methods/functions that can be traced back to C<import>.
 
-e.g. given a pragma:
+When called from code that isn't being C<require>d, it returns undef.
 
-    package MySuperPragma;
+It can be used as a replacement for the scalar form of C<caller> to provide the name of the package in which
+C<use MyPragma> is called. Unlike C<caller>, it returns the same value regardless of the number of
+intervening calls before C<MyPragma::import> is reached.
 
-    use Devel::Hints qw(ccstash);
+    package Caller;
 
-    sub import {
-        my ($class, %options) = @_;
-        my $caller = ccstash();
+    use Callee;
 
-        no strict 'refs';
+    package Callee;
 
-        *{"$caller\::whatever"} = ... ;
-    }
-
-and a subclass:
-
-    package MySubPragma
-
-    use base qw(MySuperPragma);
+    use Devel::Pragma qw(ccstash);
 
     sub import {
-        my ($class, %options) = @_;
-        $class->SUPER::import(...);
+        A();
     }
 
-and a script that uses the subclass:
+    sub A() {
+        B();
+    }
 
-    #!/usr/bin/env perl
+    sub B {
+        C();
+    }
 
-    use MySubPragma;
-
-- the C<ccstash> call in C<MySuperPragma::import> returns the name of the package that's being compiled when
-the call to C<MySuperPragma::import> (via C<MySubPragma::import>) takes place i.e. C<main> in this case.
+    sub C {
+        say ccstash; # Caller
+    }
 
 =head2 fqname
 
-Given a subroutine name, usually supplied by the caller of the pragma's import method, this function returns
-the name in package-qualified form. In addition, old-style C<'> separators are converted to new-style C<::>.
+Takes a subroutine name and an optional caller (package name). If no caller is supplied, it defaults
+to L<"ccstash">, which requires C<fqname> to be called from C<import> (or a function/method that can
+be traced back to C<import>).
 
-If the name contains no separators, then the optional calling package is prepended. If not supplied, the caller
-defaults to the value returned by L<"ccstash">. If the name is already package-qualified,
-then it is returned unchanged.
+It returns the supplied name in package-qualified form. In addition, old-style C<'> separators are
+converted to new-style C<::>.
 
-In list context, C<fqname> returns the package and unqualified subroutine name (e.g. 'main' and 'foo'), and in scalar
-context it returns the package and sub name joined by '::' (e.g. 'main::foo').
+If the name contains no separators, then the C<caller>/C<ccstash> package name is prepended.
+If the name is already package-qualified, it is returned unchanged.
+
+In list context, C<fqname> returns the package and unqualified subroutine name (e.g. 'Foo::Bar' and 'baz'),
+and in scalar context it returns the package and sub name joined by '::' (e.g. 'Foo::Bar::baz').
 
 e.g.
+
+    package MyPragma::Loader;
+
+    use MyPragma (\&coderef, 'foo', 'MyPragmaLoader::bar');
 
     package MyPragma;
 
     sub import {
-        my ($class, @names) = @_;
+        my ($class, @listeners) = @_;
+        my @subs;
 
-        for my $name (@names) {
-            my $fqname = fqname($name);
-            say $fqname;
+        for my $listener (@listeners) {
+            push @subs, handle_sub($listener);
         }
     }
 
-    package MySubPragma;
+    sub handle_sub {
+        my $sub = shift
 
-    use base qw(MyPragma);
-
-    sub import { shift->SUPER::import(@_) }
-
-    #!/usr/bin/env perl
-
-    use MyPragma qw(foo Foo::Bar::baz Foo'Bar'baz Foo'Bar::baz);
-
-    {
-        package Some::Other::Package;
-
-        use MySubPragma qw(quux);
+        if (ref($ub) eq 'CODE') {
+            return $sub;
+        } else {
+            handle_name($sub);
+        }
     }
 
-prints:
-
-    main::foo
-    Foo::Bar::baz
-    Foo::Bar::baz
-    Foo::Bar::baz
-    Some::Other::Package::quux
+    sub handle_name {
+        my ($package, $name) = fqname($name); # uses ccstash e.g. foo -> MyPragma::Loader::foo
+        my $sub = $package->can($name);
+        die "no such sub: $package\::$name" unless ($sub);
+        return $sub;
+    }
 
 =head1 VERSION
 
-1.0.1
+1.1.0
 
 =head1 SEE ALSO
 
 =over
 
-=item * L<pragma|pragma>
+=item * L<Devel::Hints|Devel::Hints>
+
+=item * L<Lexical::Hints|Lexical::Hints>
+
+=item * L<Lexical::SealRequireHints|Lexical::SealRequireHints>
 
 =item * L<perlpragma|perlpragma>
 
-=item * L<perlvar|perlvar>
-
-=item * L<B::Hooks::EndOfScope|B::Hooks::EndOfScope>
-
-=item * L<B::Hooks::OP::Check|B::Hooks::OP::Check>
-
-=item * L<B::Hooks::OP::PPAddr|B::Hooks::OP::PPAddr>
-
-=item * L<B::Hooks::OP::Annotation|B::Hooks::OP::Annotation>
-
-=item * L<Devel::Hints|Devel::Hints>
-
-=item * L<Lexical::SealRequireHints|Lexical::SealRequireHints>
+=item * L<pragma|pragma>
 
 =item * http://tinyurl.com/45pwzo
 

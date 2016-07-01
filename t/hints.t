@@ -7,7 +7,7 @@ no warnings 'portable'; # suppress "v-string in use/require non-portable" warnin
 
 use lib qw(t/lib);
 
-use Test::More tests => 24;
+use Test::More tests => 21;
 use Devel::Pragma qw(hints);
 use File::Spec;
 
@@ -74,36 +74,6 @@ use v5.6.0;
     }
 
     ok(test_4::test(), 'reuse');
-}
-
-{
-    BEGIN {
-        hints();
-        $^H{'Devel::Pragma::Test'} = 1;
-    }
-
-    BEGIN {
-        my $file = File::Spec->catfile('t', 'lib', 'test_5.pm');
-        do $file;
-    }
-
-    BEGIN {
-        is($^H{'Devel::Pragma::Test'}, 1, "compile-time do FILE doesn't clobber %^H");
-    }
-
-    ok(test_5::test(), 'compile-time do FILE');
-}
-
-{
-    BEGIN {
-        hints();
-        $^H{'Devel::Pragma::Test'} = 1;
-    }
-
-    my $file = File::Spec->catfile('t', 'lib', 'test_6.pm');
-    do $file;
-
-    ok(test_6::test(), 'runtime do FILE');
 }
 
 eval {
