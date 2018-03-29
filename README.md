@@ -239,6 +239,4 @@ scoped behaviour of `%^H` has not been enabled - either by explicitly modifying 
 
 Copyright (C) 2008-2016 by chocolateboy
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.1 or,
-at your option, any later version of Perl 5 you may have available.
+Devel::Pragma is free software. It is available under the terms of the [Artistic License 2.0](http://www.opensource.org/licenses/artistic-license-2.0.php).
