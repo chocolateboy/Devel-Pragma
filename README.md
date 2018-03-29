@@ -11,11 +11,11 @@
 - [SYNOPSIS](#synopsis)
 - [DESCRIPTION](#description)
 - [EXPORTS](#exports)
+  - [ccstash](#ccstash)
+  - [fqname](#fqname)
   - [hints](#hints)
   - [new_scope](#new_scope)
   - [scope](#scope)
-  - [ccstash](#ccstash)
-  - [fqname](#fqname)
 - [VERSION](#version)
 - [SEE ALSO](#see-also)
 - [AUTHOR](#author)
@@ -67,69 +67,6 @@ the `:all` tag. e.g.
 ```perl
 use Devel::Pragma qw(:all);
 ```
-
-## hints
-
-This function enables the scoped behaviour of the hints hash (`%^H`) and then returns a reference to it.
-
-The hints hash is a compile-time global variable (which is also available at runtime in recent perls) that
-can be used to implement lexically-scoped features and pragmas. This function provides a convenient
-way to access this hash without the need to perform the bit-twiddling that enables it on older perls.
-In addition, this module loads [Lexical::SealRequireHints](https://metacpan.org/pod/Lexical::SealRequireHints),
-which implements bugfixes that are required for the correct operation of the hints hash on older perls (< 5.12.0).
-
-Typically, `hints` should be called from a pragma's `import` (and optionally `unimport`) method:
-
-```perl
-package MyPragma;
-
-use Devel::Pragma qw(hints);
-
-sub import {
-    my $class = shift;
-    my $hints = hints;
-
-    if ($hints->{MyPragma}) {
-        # ...
-    } else {
-        $hints->{MyPragma} = ...;
-    }
-
-    # ...
-}
-```
-
-## new_scope
-
-This function returns true if the currently-compiling scope differs from the scope being compiled the last
-time `new_scope` was called. Subsequent calls will return false while the same scope is being compiled.
-
-`new_scope` takes an optional parameter that is used to uniquely identify its caller. This should usually be
-supplied as the pragma's class name unless `new_scope` is called by a module that is not intended
-to be subclassed. e.g.
-
-```perl
-package MyPragma;
-
-sub import {
-    my ($class, %options) = @_;
-
-    if (new_scope($class)) {
-        ...
-    }
-}
-```
-
-If not supplied, the identifier defaults to the name of the calling package.
-
-## scope
-
-This returns an integer that uniquely identifies the currently-compiling scope. It can be used to
-distinguish or compare scopes.
-
-A warning is issued if `scope` (or `new_scope`) is called in a context in which it doesn't make sense i.e. if the
-scoped behaviour of `%^H` has not been enabled - either by explicitly modifying `$^H`, or by calling
-[`hints`](#hints).
 
 ## ccstash
 
@@ -217,6 +154,69 @@ sub handle_name {
     return $sub;
 }
 ```
+
+## hints
+
+This function enables the scoped behaviour of the hints hash (`%^H`) and then returns a reference to it.
+
+The hints hash is a compile-time global variable (which is also available at runtime in recent perls) that
+can be used to implement lexically-scoped features and pragmas. This function provides a convenient
+way to access this hash without the need to perform the bit-twiddling that enables it on older perls.
+In addition, this module loads [Lexical::SealRequireHints](https://metacpan.org/pod/Lexical::SealRequireHints),
+which implements bugfixes that are required for the correct operation of the hints hash on older perls (< 5.12.0).
+
+Typically, `hints` should be called from a pragma's `import` (and optionally `unimport`) method:
+
+```perl
+package MyPragma;
+
+use Devel::Pragma qw(hints);
+
+sub import {
+    my $class = shift;
+    my $hints = hints;
+
+    if ($hints->{MyPragma}) {
+        # ...
+    } else {
+        $hints->{MyPragma} = ...;
+    }
+
+    # ...
+}
+```
+
+## new_scope
+
+This function returns true if the currently-compiling scope differs from the scope being compiled the last
+time `new_scope` was called. Subsequent calls will return false while the same scope is being compiled.
+
+`new_scope` takes an optional parameter that is used to uniquely identify its caller. This should usually be
+supplied as the pragma's class name unless `new_scope` is called by a module that is not intended
+to be subclassed. e.g.
+
+```perl
+package MyPragma;
+
+sub import {
+    my ($class, %options) = @_;
+
+    if (new_scope($class)) {
+        ...
+    }
+}
+```
+
+If not supplied, the identifier defaults to the name of the calling package.
+
+## scope
+
+This returns an integer that uniquely identifies the currently-compiling scope. It can be used to
+distinguish or compare scopes.
+
+A warning is issued if `scope` (or `new_scope`) is called in a context in which it doesn't make sense i.e. if the
+scoped behaviour of `%^H` has not been enabled - either by explicitly modifying `$^H`, or by calling
+[`hints`](#hints).
 
 # VERSION
 
