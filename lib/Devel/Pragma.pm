@@ -148,7 +148,7 @@ the most recent versions, which have improved support.
 
 =head1 EXPORTS
 
-C<Devel::Pragma> exports the following functions on demand. They can all be imported at once by using
+Devel::Pragma exports the following functions on demand. They can all be imported at once by using
 the C<:all> tag. e.g.
 
     use Devel::Pragma qw(:all);
@@ -215,7 +215,7 @@ L<"hints">.
 =head2 ccstash
 
 Returns the name of the currently-compiling package (stash). It only works inside code that's being C<required>,
-either in a BEGIN block via C<use> or at runtime. In practice, its use should be restricted to compile-time i.e.
+either in a C<BEGIN> block via C<use> or at runtime. In practice, its use should be restricted to compile-time i.e.
 C<import> methods and any other methods/functions that can be traced back to C<import>.
 
 When called from code that isn't being C<require>d, it returns undef.
@@ -260,10 +260,8 @@ converted to new-style C<::>.
 If the name contains no separators, then the C<caller>/C<ccstash> package name is prepended.
 If the name is already package-qualified, it is returned unchanged.
 
-In list context, C<fqname> returns the package and unqualified subroutine name (e.g. 'Foo::Bar' and 'baz'),
-and in scalar context it returns the package and sub name joined by '::' (e.g. 'Foo::Bar::baz').
-
-e.g.
+In list context, C<fqname> returns the package and unqualified subroutine name (e.g. "Foo::Bar" and "baz"),
+and in scalar context it returns the package and sub name joined by "::" (e.g. "Foo::Bar::baz"). e.g.
 
     package MyPragma::Loader;
 
