@@ -2,7 +2,7 @@
 
 [![CPAN version](https://badge.fury.io/pl/Devel-Pragma.svg)](http://badge.fury.io/pl/Devel-Pragma)
 [![build status](https://secure.travis-ci.org/chocolateboy/Devel-Pragma.svg)](http://travis-ci.org/chocolateboy/Devel-Pragma)
-[![License](https://img.shields.io/badge/license-artistic-blue.svg)](https://github.com/chocolateboy/cli-pasta/blob/master/LICENSE.md)
+[![License](https://img.shields.io/badge/license-artistic-blue.svg)](https://github.com/chocolateboy/Devel-Pragma/blob/master/LICENSE.md)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
