@@ -237,7 +237,7 @@ scoped behaviour of `%^H` has not been enabled - either by explicitly modifying 
 
 # COPYRIGHT AND LICENSE
 
-Copyright © 2008-2016 by chocolateboy
+Copyright © 2008-2016 by chocolateboy.
 
-Devel::Pragma is free software; you can redistribute it and/or modify it under the terms of the
+This is free software; you can redistribute it and/or modify it under the terms of the
 [Artistic License 2.0](http://www.opensource.org/licenses/artistic-license-2.0.php).
