@@ -313,7 +313,7 @@ L<"hints">.
 
 =item * L<pragma|pragma>
 
-=item * http://tinyurl.com/45pwzo
+=item * https://tinyurl.com/45pwzo
 
 =back
 
@@ -323,9 +323,9 @@ chocolateboy <chocolate@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2008-2016 by chocolateboy.
+Copyright (c) 2008-2020 by chocolateboy.
 
 This library is free software; you can redistribute it and/or modify it under the
-terms of the L<Artistic License 2.0|http://www.opensource.org/licenses/artistic-license-2.0.php>.
+terms of the L<Artistic License 2.0|https://www.opensource.org/licenses/artistic-license-2.0.php>.
 
 =cut

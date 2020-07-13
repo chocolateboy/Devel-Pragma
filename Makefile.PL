@@ -35,8 +35,8 @@ WriteMakefile(
     ($EUMM_VERSION >= 6.46 ?
         (META_MERGE => {
             resources => {
-                repository => 'http://github.com/chocolateboy/Devel-Pragma',
-                bugtracker => 'http://github.com/chocolateboy/Devel-Pragma/issues',
+                repository => 'https://github.com/chocolateboy/Devel-Pragma',
+                bugtracker => 'https://github.com/chocolateboy/Devel-Pragma/issues',
             },
         })
         : ()

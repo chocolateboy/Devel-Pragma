@@ -8,7 +8,7 @@
 #include "ppport.h"
 
 /*
- * http://www.nntp.perl.org/group/perl.perl5.porters/2014/11/msg222354.html
+ * https://www.nntp.perl.org/group/perl.perl5.porters/2014/11/msg222354.html
  *
  * Maybe it just shows that the macro is poorly named.  Or, rather,
  * IN_PERL_COMPILETIME means that we are currently in the middle of parsing
